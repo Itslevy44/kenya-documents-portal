@@ -107,7 +107,7 @@ jobs:
           php artisan route:cache
           php artisan view:cache
 
-      # ── Deploy Laravel app to htdocs/laravel_app/ ──────────────────────
+      # ── Deploy Laravel app to kenyadocuments.online/htdocs/laravel_app/ ──
       - name: Deploy Laravel app via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -115,7 +115,7 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./
-          server-dir: /htdocs/laravel_app/
+          server-dir: /kenyadocuments.online/htdocs/laravel_app/
           exclude: |
             **/.git/**
             **/.github/**
@@ -129,7 +129,7 @@ jobs:
             **/.env.example
             **/database/*.sql
 
-      # ── Deploy public/ contents to htdocs/ (web root) ──────────────────
+      # ── Deploy public/ contents to kenyadocuments.online/htdocs/ (web root) ──
       - name: Deploy public folder to htdocs via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -137,6 +137,6 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./public/
-          server-dir: /htdocs/
+          server-dir: /kenyadocuments.online/htdocs/
           exclude: |
             **/.git/**
