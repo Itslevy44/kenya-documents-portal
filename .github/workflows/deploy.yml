@@ -18,7 +18,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, pdo_mysql, zip, gd
+          extensions: mbstring, pdo_mysql, zip, gd, curl, fileinfo
           coverage: none
 
       - name: Cache Composer packages
@@ -32,29 +32,58 @@ jobs:
       - name: Install Composer dependencies (production)
         run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
-      - name: Copy .env and generate key
+      - name: Set up .env and generate app key
         run: |
           cp .env.example .env
-          php artisan key:generate --no-interaction
+          sed -i 's|APP_KEY=|APP_KEY=${{ secrets.APP_KEY }}|' .env
+          sed -i 's|DB_HOST=.*|DB_HOST=${{ secrets.DB_HOST }}|' .env
+          sed -i 's|DB_DATABASE=.*|DB_DATABASE=${{ secrets.DB_DATABASE }}|' .env
+          sed -i 's|DB_USERNAME=.*|DB_USERNAME=${{ secrets.DB_USERNAME }}|' .env
+          sed -i 's|DB_PASSWORD=.*|DB_PASSWORD=${{ secrets.DB_PASSWORD }}|' .env
+          sed -i 's|AT_USERNAME=.*|AT_USERNAME=${{ secrets.AT_USERNAME }}|' .env
+          sed -i 's|AT_API_KEY=.*|AT_API_KEY=${{ secrets.AT_API_KEY }}|' .env
+          sed -i 's|PAYHERO_BASIC_AUTH=.*|PAYHERO_BASIC_AUTH=${{ secrets.PAYHERO_BASIC_AUTH }}|' .env
+          sed -i 's|PAYHERO_CHANNEL_ID=.*|PAYHERO_CHANNEL_ID=${{ secrets.PAYHERO_CHANNEL_ID }}|' .env
+          sed -i 's|PAYHERO_WEBHOOK_SECRET=.*|PAYHERO_WEBHOOK_SECRET=${{ secrets.PAYHERO_WEBHOOK_SECRET }}|' .env
+          sed -i 's|TELEGRAM_BOT_TOKEN=.*|TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}|' .env
+          sed -i 's|TELEGRAM_CHANNEL_ID=.*|TELEGRAM_CHANNEL_ID=${{ secrets.TELEGRAM_CHANNEL_ID }}|' .env
 
-      - name: Optimise Laravel
-        run: php artisan optimize
+      - name: Optimise Laravel (cache config, routes, views)
+        run: |
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
 
-      - name: Deploy via FTP
+      # ── Deploy Laravel app to htdocs/laravel_app/ ──────────────────────
+      - name: Deploy Laravel app via FTP
         uses: SamKirkland/FTP-Deploy-Action@latest
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./
-          server-dir: /htdocs/
+          server-dir: /htdocs/laravel_app/
           exclude: |
-            **/.git*
-            **/.git*/**
+            **/.git/**
+            **/.github/**
             **/node_modules/**
             **/tests/**
             **/storage/logs/**
-            **/.env
             **/storage/framework/cache/**
             **/storage/framework/sessions/**
             **/storage/framework/views/**
+            **/public/**
+            **/.env.example
+            **/database/*.sql
+
+      # ── Deploy public/ contents to htdocs/ (web root) ──────────────────
+      - name: Deploy public folder to htdocs via FTP
+        uses: SamKirkland/FTP-Deploy-Action@latest
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./public/
+          server-dir: /htdocs/
+          exclude: |
+            **/.git/**
