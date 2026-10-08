@@ -9,7 +9,7 @@
         "africastalking/africastalking": "^3.0",
         "barryvdh/laravel-dompdf": "^3.0",
         "guzzlehttp/guzzle": "^7.2",
-        "laravel/framework": "^11.58",
+        "laravel/framework": "^11.0",
         "laravel/tinker": "^2.9",
         "phpoffice/phpword": "^1.3"
     },
