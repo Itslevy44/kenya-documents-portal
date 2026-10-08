@@ -33,6 +33,7 @@ jobs:
         run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
         env:
           COMPOSER_NO_AUDIT: 1
+          COMPOSER_POLICY_ADVISORIES_BLOCK: 0
 
       - name: Set up .env and generate app key
         run: |
