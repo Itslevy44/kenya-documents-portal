@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -14,13 +15,12 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+// Auth endpoints
+Route::post('/auth/send-otp', [AuthController::class, 'sendOtp']);
+Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp']);
+Route::post('/auth/logout', [AuthController::class, 'logout']);
 
-// Placeholder API routes — controllers added in subsequent FEATs
-// Route::post('/auth/send-otp', [AuthController::class, 'sendOtp']);
-// Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp']);
+// Document, Payment, and Webhook routes — added in subsequent FEATs
 // Route::post('/documents/build', [DocumentController::class, 'build']);
 // Route::post('/payments/initiate', [PaymentController::class, 'initiate']);
 // Route::post('/webhooks/payhero', [PaymentController::class, 'webhook']);
