@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-004",
+  "type": "feat",
+  "description": "Implement phone-number OTP authentication using Africa's Talking SMS. Covers the AfricasTalkingService wrapper, AuthController (sendOtp/verifyOtp/logout), both middleware classes, and the signin Blade view with its two-step JS flow. Depends on FEAT-003 (User and OtpCode models must exist).",
+  "status": "pending",
+  "steps": [
+    "Create app/Services/AfricasTalkingService.php: constructor reads AT_USERNAME, AT_API_KEY, AT_SENDER_ID from config('services.africastalking.*'), initialises AfricasTalking\\SDK\\AfricasTalking, exposes sendSms(string $phone, string $message): bool — calls $sms->send(['to'=>[$phone],'message'=>$message,'from'=>$senderId]), returns true on success, logs failure to Log::error() and returns false",
+    "Add Africa's Talking config block to config/services.php: 'africastalking' => ['username'=>env('AT_USERNAME'),'api_key'=>env('AT_API_KEY'),'sender_id'=>env('AT_SENDER_ID')]",
+    "Create app/Http/Controllers/AuthController.php with three methods: sendOtp() — validate phone regex /^07\\d{8}$/, rate-limit 3 OTPs per phone per 10 min (count OtpCode where phone=$phone and created_at>now()-10min, abort 429 if >=3), generate 6-digit OTP, hash with hash('sha256',$otp), store OtpCode(phone,code=hash,expires_at=now+10min), send plaintext SMS 'Your Kenya Docs code is: {otp}', return JSON {sent:true}. verifyOtp() — validate phone+code(6 digits), find latest unused unexpired OtpCode for phone, hash-compare with hash('sha256',$request->code), mark used_at=now(), upsert User(phone), Auth::login($user), return JSON {verified:true,redirect:intended_or_home}. logout() — Auth::logout(), session invalidate+regenerate, return JSON {logged_out:true}",
+    "Create app/Http/Middleware/AuthMiddleware.php: if !Auth::check() store intended URL in session('url.intended'), return redirect('/sign-in'). Register as alias 'auth' in bootstrap/app.php withMiddleware block",
+    "Create app/Http/Middleware/AdminMiddleware.php: if !Auth::check() || !Auth::user()->is_admin abort(403). Register as alias 'admin' in bootstrap/app.php",
+    "Update bootstrap/app.php to register both middleware aliases using ->withMiddleware(function(Middleware $m){ $m->alias(['auth'=>AuthMiddleware::class,'admin'=>AdminMiddleware::class]); })",
+    "Update resources/views/signin.blade.php (replacing stub): two-step form — Step 1: phone input + 'Send OTP' button; Step 2 (shown after OTP sent): OTP input + 'Verify' button. JS inline or in public/js/auth.js using api.js to POST to /api/auth/send-otp and /api/auth/verify-otp. Show errors from response. Redirect on success.",
+    "Exclude /api/auth/* routes from CSRF middleware in bootstrap/app.php using ->withMiddleware(fn($m)=>$m->validateCsrfTokens(except:['/api/auth/*','/api/payments/webhook']))"
+  ],
+  "acceptance_criteria": [
+    "`php artisan route:list` shows POST /api/auth/send-otp, POST /api/auth/verify-otp, POST /api/auth/logout",
+    "AuthMiddleware redirects unauthenticated requests to /sign-in",
+    "AdminMiddleware returns 403 for non-admin users",
+    "OTP rate limit: 4th OTP request within 10 min returns HTTP 429",
+    "OTP codes are stored as SHA-256 hashes (not plaintext) in otp_codes table"
+  ],
+  "verification": [
+    "php artisan route:list",
+    "php artisan optimize"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

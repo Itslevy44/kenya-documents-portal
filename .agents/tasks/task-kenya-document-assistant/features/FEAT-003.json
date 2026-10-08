@@ -1,0 +1,37 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Create all 13 Eloquent models with fillable arrays, casts, and relationships. Then create CategorySeeder (7 categories) and TemplateSeeder (15 templates with complete realistic schema/definition JSON). Depends on FEAT-002 (migrations must exist so models resolve table names). The models and seeders are independent of each other within this FEAT.",
+  "status": "pending",
+  "steps": [
+    "Create app/Models/User.php extending Authenticatable: fillable [phone, name, email, is_admin], casts [is_admin=>boolean], hasMany GeneratedDocument, Payment, AuditLog; hasOne UserProfile",
+    "Create app/Models/OtpCode.php: fillable [phone, code, expires_at, used_at], casts [expires_at=>datetime, used_at=>datetime], scopeValid() — where used_at is null and expires_at > now()",
+    "Create app/Models/Category.php: fillable [name, slug, description, icon, is_active, sort_order], casts [is_active=>boolean], hasMany Template; scopeActive() where is_active=true ordered by sort_order",
+    "Create app/Models/Template.php: fillable [category_id, name, slug, description, price, schema, definition, is_active, sort_order, meta_title, meta_description], casts [schema=>array, definition=>array, price=>decimal:2, is_active=>boolean], belongsTo Category, hasMany GeneratedDocument",
+    "Create app/Models/GeneratedDocument.php: fillable [user_id, session_token, template_id, form_data, status, pdf_path, word_path, preview_path, edit_count, edit_window_expires_at, payment_completed_at], casts [form_data=>array, edit_window_expires_at=>datetime, payment_completed_at=>datetime], belongsTo User, belongsTo Template, hasOne Payment, hasMany Download",
+    "Create app/Models/LibraryItem.php: fillable [title, description, file_name, telegram_file_id, file_size, mime_type, category, is_free, download_count, is_active], casts [is_free=>boolean, is_active=>boolean], scopeActive(), scopeFree()",
+    "Create app/Models/Payment.php: fillable [generated_document_id, user_id, phone, amount, mpesa_receipt, payhero_reference, status, callback_payload, promo_code_id, discount_amount], casts [callback_payload=>array, amount=>decimal:2, discount_amount=>decimal:2], belongsTo GeneratedDocument, User, PromoCode",
+    "Create app/Models/Download.php: fillable [generated_document_id, user_id, ip_address, user_agent, file_type, downloaded_at], casts [downloaded_at=>datetime], belongsTo GeneratedDocument, User",
+    "Create app/Models/AuditLog.php: fillable [user_id, action, subject_type, subject_id, payload, ip_address], casts [payload=>array], const UPDATED_AT = null (no updated_at), belongsTo User",
+    "Create app/Models/UserProfile.php: fillable [user_id, full_name, id_number_encrypted, phone, address, city], belongsTo User. Add getIdNumberAttribute() accessor that calls Crypt::decrypt() and setIdNumberAttribute() mutator that calls Crypt::encrypt() before storing to id_number_encrypted",
+    "Create app/Models/MissingDocumentRequest.php: fillable [user_id, search_query, document_description, phone], const UPDATED_AT = null, belongsTo User",
+    "Create app/Models/PromoCode.php: fillable [code, type, value, max_uses, uses_count, is_active, expires_at, is_referral, referrer_user_id], casts [value=>decimal:2, is_active=>boolean, is_referral=>boolean, expires_at=>datetime], hasMany PromoCodeUse, belongsTo User as referrerUser (foreign key: referrer_user_id). Add isValid() method: checks is_active, expires_at > now(), uses_count < max_uses (or max_uses null)",
+    "Create app/Models/PromoCodeUse.php: fillable [promo_code_id, user_id, payment_id, used_at], casts [used_at=>datetime], const UPDATED_AT = null, belongsTo PromoCode, User, Payment",
+    "Create database/seeders/CategorySeeder.php: insert 7 categories using Category::create() — 1:Letters(slug:letters, icon:✉️), 2:Affidavits(slug:affidavits, icon:⚖️), 3:Business Documents(slug:business, icon:💼), 4:School Documents(slug:school, icon:🎓), 5:Legal Agreements(slug:agreements, icon:📋), 6:Employment(slug:employment, icon:👔), 7:Community(slug:community, icon:🤝) — all is_active=true, sort_order 1-7",
+    "Create database/seeders/TemplateSeeder.php with all 15 templates (is_active=false). Each template must have a complete 'schema' array (array of field objects: {name, label, type, required, options?, placeholder?, help?}) and a complete 'definition' array (document structure: {title, sections:[{heading, body_template}]} where body_template uses {{field_name}} placeholders). Templates: 1.application-letter(KSh50,Letters), 2.recommendation-letter(KSh50,Letters), 3.school-fee-request(KSh50,School), 4.consent-letter(KSh50,Letters), 5.invitation-letter(KSh50,Letters), 6.affidavit-lost-certificate(KSh100,Affidavits), 7.affidavit-name-change(KSh100,Affidavits), 8.affidavit-residence(KSh100,Affidavits), 9.affidavit-general(KSh100,Affidavits), 10.employment-letter(KSh100,Employment), 11.business-introduction(KSh100,Business), 12.cbo-introduction(KSh100,Community), 13.meeting-minutes(KSh100,Business), 14.rental-agreement(KSh150,Agreements), 15.sale-agreement(KSh150,Agreements)",
+    "Update database/seeders/DatabaseSeeder.php to call $this->call([CategorySeeder::class, TemplateSeeder::class])"
+  ],
+  "acceptance_criteria": [
+    "`php artisan model:show User` exits 0 and lists relationships",
+    "`php artisan db:seed --class=CategorySeeder` inserts exactly 7 category rows",
+    "`php artisan db:seed --class=TemplateSeeder` inserts exactly 15 template rows with non-null schema and definition columns",
+    "All 13 model files exist in app/Models/ and can be autoloaded without PHP syntax errors (verify with `php artisan tinker --execute=\"User::class;\"`)"
+  ],
+  "verification": [
+    "php artisan model:show User",
+    "php artisan migrate:fresh --seed",
+    "php artisan tinker --execute=\"echo Category::count() . ' categories, ' . Template::count() . ' templates';\""
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

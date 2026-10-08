@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-006",
+  "type": "feat",
+  "description": "Implement M-Pesa payments via PayHero STK push: PayHeroService (STK initiation + webhook signature verification), PaymentController (initiate/status/webhook), promo code validation, idempotent webhook processing, SMS confirmation via AfricasTalkingService, and the payment Blade view with polling JS. Depends on FEAT-004 (auth), FEAT-005 (GeneratedDocument and DocumentService), FEAT-003 (Payment, PromoCode models).",
+  "status": "pending",
+  "steps": [
+    "Add PayHero config to config/services.php: 'payhero'=>['api_key'=>env('PAYHERO_API_KEY'),'channel_id'=>env('PAYHERO_CHANNEL_ID'),'webhook_secret'=>env('PAYHERO_WEBHOOK_SECRET'),'base_url'=>'https://backend.payhero.co.ke/api/v2']",
+    "Create app/Services/PayHeroService.php with two methods: initiateStk(string $phone, float $amount, string $reference): array — POST to {base_url}/payments with Bearer auth header (api_key), body {amount:$amount, phone_number:$phone, channel_id:$channelId, provider:'m-pesa', external_reference:$reference, callback_url:route('payments.webhook')}, return decoded JSON response. verifySignature(Request $r): bool — compute HMAC-SHA256 of raw request body using webhook_secret, compare with X-Payhero-Signature header using hash_equals()",
+    "Create app/Http/Controllers/PaymentController.php with three methods: initiate(Request $r) — validate {document_id, phone /^07\\d{8}$/, promo_code?}; load GeneratedDocument; if promo_code given: find active PromoCode by code, check isValid() (active + not expired + uses_count<max_uses), compute discount (percent: amount*value/100, fixed: min(value,amount)), final_amount=max(1, price-discount); create Payment(status=pending, phone, amount=final_amount, discount_amount, promo_code_id); call PayHero::initiateStk; update payment payhero_reference from response; return JSON {payment_id:$payment->id, status:'pending'}. status(Request $r, int $id) — return JSON {status:$payment->status, receipt:$payment->mpesa_receipt}. webhook(Request $r) — verify signature (abort 403 if fails); find Payment by external_reference / payhero_reference; idempotency: if payment->status already 'completed' return JSON {ok:true}; verify amount matches; update payment(status, mpesa_receipt, callback_payload=full request json); on status=completed: update GeneratedDocument(status=paid, payment_completed_at=now, edit_window_expires_at=now+24h); if promo_code_id: create PromoCodeUse, increment promo_code->uses_count; call DocumentService::generateDocuments; send SMS via AfricasTalkingService 'Payment confirmed! M-Pesa receipt: {receipt}. Download: {url}'; return JSON {ok:true}",
+    "Register webhook route OUTSIDE auth middleware and OUTSIDE CSRF middleware. Add '/api/payments/webhook' to CSRF exceptions in bootstrap/app.php (already done in FEAT-004, confirm it's there).",
+    "Update resources/views/payment.blade.php (replacing stub): show document summary (template name, amount), phone input pre-filled from session, promo code input with 'Apply' button, final amount display, 'Pay with M-Pesa' button. Pass document_id and amount as data attributes.",
+    "Flesh out public/js/payment.js: on 'Pay' click POST to /api/payments/initiate via api.js; on success start polling /api/payments/{id}/status every 3000ms; show countdown timer (2 min = 120 polls); on status=completed stop polling, show success message, redirect to /documents/{slug}/download/{token}; on status=failed show error; on timeout show 'Check your phone and refresh' message. On promo 'Apply' click: POST to /api/promo/validate, update displayed amount."
+  ],
+  "acceptance_criteria": [
+    "`php artisan route:list` shows POST /api/payments/initiate, GET /api/payments/{id}/status, POST /api/payments/webhook",
+    "Webhook route has no auth or CSRF middleware",
+    "PayHeroService::verifySignature returns false for tampered payloads",
+    "Promo code with max_uses=1 can only be applied once (second use returns error)",
+    "Successful webhook sets generated_document status=paid and edit_window_expires_at=now+24h",
+    "SMS is sent with M-Pesa receipt on successful payment"
+  ],
+  "verification": [
+    "php artisan route:list",
+    "php artisan optimize"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

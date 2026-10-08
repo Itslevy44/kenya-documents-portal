@@ -1,0 +1,30 @@
+{
+  "id": "FEAT-005",
+  "type": "feat",
+  "description": "Implement document generation: DocumentService (PDF via dompdf, Word via phpoffice/phpword, watermarked preview), StorageService, DocumentController (show/preview/generate/download), edit-window logic, and the builder/preview/download Blade views with the JS form-builder that renders dynamic fields from template.schema JSON. Depends on FEAT-003 (models) and FEAT-004 (auth middleware).",
+  "status": "pending",
+  "steps": [
+    "Create app/Services/StorageService.php: getDocumentPath(string $filename): string — returns storage_path('app/documents/').$filename. ensureDirectory(): creates storage/app/documents/ if not exists. deleteFile(string $path): unlinks file if it exists.",
+    "Create app/Services/DocumentService.php with two public methods. generatePreview(GeneratedDocument $doc): string — builds HTML string from template->definition (replace {{field}} placeholders with form_data values), passes HTML to Dompdf, adds diagonal watermark 'PREVIEW — Not for official use' using Dompdf canvas afterRender callback (drawText at center, rotate 45°, color rgba(255,0,0,0.2), font-size 40pt), saves to storage/app/documents/{token}-preview.pdf, updates doc->preview_path, returns path. generateDocuments(GeneratedDocument $doc): array — (1) generates clean PDF: same HTML but no watermark, A4 paper size (DOMPDF_PAPER_SIZE=A4), 25mm margins set via CSS in the HTML (margin:25mm), font-family:Times New Roman 12pt, line-height:1.5, adds footer with page number via Dompdf canvas, adds signature lines at bottom of last section, saves as {slug}-{token}.pdf; (2) generates Word .docx using PhpWord: create new PhpWord, set default font Times New Roman 12pt, add section with margins 2500 (twips = 25mm), add paragraphs from definition sections with 1.5 line spacing (LineSpacingRule::AUTO, spacing 276), add signature table at end, save as {slug}-{token}.docx; returns ['pdf'=>pdf_path, 'word'=>word_path]",
+    "Create app/Http/Controllers/DocumentController.php with four methods: show(string $slug) — find Template by slug where is_active=true (abort 404 otherwise), return view('builder', compact('template')); preview(Request $r, string $slug) — validate form_data array against template->schema required fields, create GeneratedDocument(status=draft, session_token=Str::random(32), form_data=$r->form_data, user_id=auth()->id()), call DocumentService::generatePreview, return JSON {preview_url:route('documents.preview-file',$token), token:$token, document_id:$doc->id}; generate(Request $r) — find GeneratedDocument by token, check edit window (edit_count<3 AND (edit_window_expires_at is null OR edit_window_expires_at>now())), call DocumentService::generateDocuments, update doc pdf_path/word_path/edit_count+1, return JSON {pdf_url:..., word_url:...}; download(string $slug, string $token, string $type) — find doc by token, verify status=paid, check auth or session_token match, stream file from storage_path, log Download record, return response()->download()",
+    "Implement edit-window enforcement in generate(): if doc->status != 'paid' abort 403 ('Payment required'). If edit_count >= 3 abort 403 ('Edit limit reached'). If edit_window_expires_at is not null and edit_window_expires_at < now() abort 403 ('Edit window expired').",
+    "Update resources/views/builder.blade.php: pass template as JSON to a data-schema attribute on a <form> element, include public/js/builder.js via @push('scripts'). Form has #form-fields div (populated by JS), hidden session_token input, submit button 'Preview Document'.",
+    "Flesh out public/js/builder.js: on DOMContentLoaded read data-schema JSON from form element, iterate fields array, for each field render appropriate HTML input (text→<input type=text>, textarea→<textarea>, date→<input type=date>, select→<select> with options, phone→<input type=tel pattern='^07\\d{8}$'>, email→<input type=email>, number→<input type=number>), append to #form-fields. On form submit: collect FormData as JSON object, POST to /api/documents/{slug}/preview via api.js, on success open preview URL in new tab and show download-now button.",
+    "Update resources/views/preview.blade.php: embed PDF preview in <iframe>, show 'Looks good? Pay KSh X' button linking to payment page, pass token and document_id as data attributes.",
+    "Update resources/views/download.blade.php: show 'Download PDF' and 'Download Word' buttons with links to /documents/{slug}/download/{token}/pdf and /word. Show edit-window countdown if within 24h of payment."
+  ],
+  "acceptance_criteria": [
+    "`php artisan route:list` shows GET /documents/{slug}, POST /api/documents/{slug}/preview, POST /api/documents/generate, GET /documents/{slug}/download/{token}/{type}",
+    "DocumentService::generatePreview creates a PDF file in storage/app/documents/ with '-preview.pdf' suffix",
+    "DocumentService::generateDocuments creates both .pdf and .docx files",
+    "Generated PDF is A4 with Times New Roman 12pt (verified by opening in a PDF viewer)",
+    "Preview PDF contains the watermark text",
+    "Edit window: 4th generate() call within 24h returns HTTP 403 with 'Edit limit reached'"
+  ],
+  "verification": [
+    "php artisan route:list",
+    "php artisan optimize"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

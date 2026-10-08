@@ -1,0 +1,37 @@
+{
+  "id": "FEAT-008",
+  "type": "feat",
+  "description": "Wire all routes (web.php + api.php), build the AdminController with all admin endpoints, flesh out the admin Blade view and admin.js, finalize PWA files, add all remaining config, verify the complete route table, and run a final optimize. This is the integration FEAT that connects every previous FEAT into a deployable whole. Depends on all previous FEATs.",
+  "status": "pending",
+  "steps": [
+    "Create app/Http/Controllers/AdminController.php with all admin methods grouped by resource: Templates: listTemplates(), createTemplate(Request), updateTemplate(Request, int), previewTemplate(int), toggleTemplate(int). Library: listLibraryItems(), uploadLibraryItem(Request) [validate file+metadata, store temp, upload via TelegramService, create LibraryItem], updateLibraryItem(Request, int), deleteLibraryItem(int). Payments: listPayments(Request) [filter by status/date/phone, paginate], viewPaymentCallback(int), manualUnlock(int) [set generated_document status=paid, generate docs if not already done]. Users: searchUsers(Request), deleteUser(Request, int) [with reason, call UserController logic]. Stats: getStats() — return JSON {total_revenue:Payment::completed()->sum('amount'), paid_docs:GeneratedDocument::paid()->count(), top_templates:[array of 5 templates by doc count], daily_revenue:[30 day array from payments grouped by date]}. MissingRequests: listMissingRequests(). PromoCodes: listPromoCodes(), createPromoCode(Request) [validate code unique, type, value, max_uses, expires_at, is_referral, referrer_user_id], togglePromoCode(int), deletePromoCode(int), generateReferralCode(Request) [create PromoCode with is_referral=true, referrer_user_id=$r->user_id, auto-generated code=REFER-{userId}-{random6}].",
+    "Write routes/web.php with all web routes: GET / → HomeController@index (or closure returning view), GET /categories/{slug} → CategoryController@show (cached), GET /documents/{slug} → DocumentController@show, GET /documents/{slug}/preview/{token} → DocumentController@previewFile, GET /documents/{slug}/pay/{token} → PaymentController@payPage, GET /documents/{slug}/download/{token}/{type} → DocumentController@download, GET /library → LibraryController@index, GET /library/{id}/{slug} → LibraryController@show, GET /sign-in → return view('signin'), GET /my-documents → [auth] DocumentController@myDocuments, GET /profile → [auth] ProfileController@show, GET /admin → [admin] return view('admin.dashboard'), GET /sitemap.xml → SitemapController@index, GET /robots.txt → RobotsController@index.",
+    "Write routes/api.php with all API routes: Auth: POST /auth/send-otp, POST /auth/verify-otp, POST /auth/logout. Documents: POST /documents/{slug}/preview, POST /documents/generate, GET /documents/{slug}/preview-file/{token}. Payments: POST /payments/initiate, GET /payments/{id}/status, POST /payments/webhook [no CSRF/auth]. Promo: POST /promo/validate. Library: GET /library/search, POST /library/{id}/download. Profile: GET /profile/id-number [auth], PUT /profile [auth]. Admin [admin middleware]: GET /admin/templates, POST /admin/templates, PUT /admin/templates/{id}, GET /admin/templates/{id}/preview, PATCH /admin/templates/{id}/toggle, GET /admin/library, POST /admin/library, PUT /admin/library/{id}, DELETE /admin/library/{id}, GET /admin/payments, GET /admin/payments/{id}/callback, POST /admin/payments/{id}/unlock, GET /admin/users, DELETE /admin/users/{id}, GET /admin/stats, GET /admin/missing-requests, GET /admin/promo-codes, POST /admin/promo-codes, PATCH /admin/promo-codes/{id}/toggle, DELETE /admin/promo-codes/{id}, POST /admin/promo-codes/referral. Missing docs: POST /missing-document. User: DELETE /user [auth].",
+    "Create app/Http/Controllers/HomeController.php: index() — load active categories with template count (cached 3600s), featured templates (is_active=true, sort_order ASC, limit 6), return view('home', compact('categories','featured')).",
+    "Create app/Http/Controllers/CategoryController.php: show(string $slug) — find category by slug (abort 404 if not found or inactive), load paginated active templates (cached per slug 3600s), return view('category', compact('category','templates')).",
+    "Update resources/views/home.blade.php: hero section (headline, sub, CTA), categories grid, featured templates cards, 'Can't find document?' missing-doc request form.",
+    "Update resources/views/category.blade.php: category header, template cards grid (name, price, description, 'Generate' button).",
+    "Update resources/views/admin/dashboard.blade.php: sidebar nav (Templates, Library, Payments, Users, Stats, Promo Codes, Missing Requests), main content area #admin-content, stat cards at top. All data loaded via admin.js AJAX calls to admin API endpoints.",
+    "Flesh out public/js/admin.js: on DOMContentLoaded load stats, render stat cards. Tab navigation: each sidebar link loads corresponding admin view via GET to admin API and renders HTML into #admin-content. Implement template toggle, library upload (multipart FormData), payment list with filter form, user search, promo code CRUD all using api.js wrapper.",
+    "Finalize public/manifest.json: verify app name='Kenya Docs', add icons entries pointing to /assets/icon-192.png and /assets/icon-512.png (create placeholder 1x1 PNG files at those paths). Update resources/views/layouts/app.blade.php to add <link rel=manifest href=/manifest.json> in <head> and @push('scripts') block at bottom with service worker registration script.",
+    "Verify config/cache.php has CACHE_STORE defaulting to env('CACHE_DRIVER','file'). Verify config/session.php uses env('SESSION_DRIVER','file'). These are correct in default Laravel 11 but confirm and do not change to anything requiring Redis.",
+    "Final: run `php artisan optimize` to generate route/config/view caches. Run `php artisan route:list` and confirm all expected routes are present."
+  ],
+  "acceptance_criteria": [
+    "`php artisan route:list` shows all routes from web.php and api.php with correct HTTP verbs and middleware",
+    "`php artisan optimize` exits 0",
+    "Admin routes all have 'admin' middleware",
+    "Auth-required web routes all have 'auth' middleware",
+    "Webhook route has no CSRF and no auth middleware",
+    "public/manifest.json has valid icons array with paths that exist under public/assets/",
+    "Service worker is registered in the layout",
+    "GET / returns the home view without errors (php artisan route:list shows the route)"
+  ],
+  "verification": [
+    "php artisan route:list",
+    "php artisan optimize",
+    "php -r \"json_decode(file_get_contents('public/manifest.json')); echo json_last_error() === 0 ? 'manifest OK' : 'manifest ERROR';\""
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

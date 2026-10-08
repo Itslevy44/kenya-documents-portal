@@ -1,0 +1,16 @@
+{
+  "task_id": "task-kenya-document-assistant",
+  "task_description": "Build a full Kenyan document-generation SaaS on Laravel 11 + MySQL + vanilla JS. Users pick a document template, fill a dynamic form, pay via M-Pesa (PayHero STK push), then download a clean PDF and Word file. Secondary features: document library stored on Telegram, OTP auth via Africa's Talking SMS, admin panel, promo codes, PWA, GitHub Actions FTP CI/CD for InfinityFree hosting.",
+  "status": "pending",
+  "feature_order": [
+    "FEAT-001",
+    "FEAT-002",
+    "FEAT-003",
+    "FEAT-004",
+    "FEAT-005",
+    "FEAT-006",
+    "FEAT-007",
+    "FEAT-008"
+  ],
+  "blocked_reason": null
+}

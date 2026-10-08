@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-007",
+  "type": "feat",
+  "description": "Implement the document library (TelegramService for storage, LibraryController with FULLTEXT search and streaming download, library Blade views) and all ancillary controllers: ProfileController (encrypted ID number), MissingDocumentController, UserController (GDPR/ODPC data deletion), SitemapController, RobotsController. These features are independent of each other and of FEAT-005/006 except they share models. Depends on FEAT-003 (models) and FEAT-004 (auth middleware).",
+  "status": "pending",
+  "steps": [
+    "Add Telegram config to config/services.php: 'telegram'=>['bot_token'=>env('TELEGRAM_BOT_TOKEN'),'channel_id'=>env('TELEGRAM_CHANNEL_ID'),'base_url'=>'https://api.telegram.org']",
+    "Create app/Services/TelegramService.php: uploadFile(string $localPath, string $caption): string — POST to https://api.telegram.org/bot{token}/sendDocument with multipart/form-data (chat_id=$channelId, document=@localPath, caption=$caption), return file_id from response.result.document.file_id. getFileUrl(string $fileId): string — GET https://api.telegram.org/bot{token}/getFile?file_id=$fileId, extract file_path, return 'https://api.telegram.org/file/bot{token}/{file_path}'. streamFile(string $fileId): StreamedResponse — call getFileUrl, use Http::withOptions(['stream'=>true])->get($url), return response()->stream(fn()=>fpassthru($resource), 200, ['Content-Type'=>mime_type, 'Content-Disposition'=>'attachment'])",
+    "Create app/Http/Controllers/LibraryController.php: index() — Cache::remember('library.index.'.request('category','all'), 3600, fn()=>LibraryItem::active()->when(request('category'),fn($q,$c)=>$q->where('category',$c))->paginate(12)), return view('library.index', compact('items')). show(int $id, string $slug) — find item, return view('library.show', compact('item')). download(int $id) — find active item, if is_free stream directly via TelegramService::streamFile; else check auth and paid status; increment download_count; log to downloads table. search(Request $r) — validate query (min 2 chars), DB::select('SELECT * FROM library_items WHERE MATCH(title,description) AGAINST(? IN BOOLEAN MODE)',[$r->query.'*']), return JSON results.",
+    "Create app/Http/Controllers/ProfileController.php: show() — find or create UserProfile for auth user, return view('profile', compact('profile')). update(Request $r) — validate full_name, id_number (optional), phone, address, city; if id_number provided: $profile->id_number_encrypted = Crypt::encrypt($r->id_number); save profile; return JSON {saved:true}. getIdNumber() — return Crypt::decrypt($profile->id_number_encrypted) for owner only.",
+    "Create app/Http/Controllers/MissingDocumentController.php: store(Request $r) — validate search_query (required), document_description (optional), phone (optional); create MissingDocumentRequest; return JSON {logged:true}. index() — admin only; group by document_description with count, ordered by count desc; return view('admin.missing-requests', compact('grouped')).",
+    "Create app/Http/Controllers/UserController.php: destroy(Request $r) — auth required; soft-delete or anonymise: set user name='Deleted User', phone='0000000000'+ id, email=null; delete UserProfile; delete OtpCode where phone=user->original_phone; create AuditLog(action='user_deleted', payload={reason:$r->reason, original_phone_hash:hash('sha256',$originalPhone)}); return JSON {deleted:true}. Keep Payment records but null out user_id (already nullOnDelete FK) and set phone='anonymised'.",
+    "Create app/Http/Controllers/SitemapController.php: index() — build XML sitemap with static URLs (/, /library, /sign-in) + all active categories (/categories/{slug}) + all active templates (/documents/{slug}); cache 3600s; return response with Content-Type application/xml.",
+    "Create app/Http/Controllers/RobotsController.php: index() — return plain text 'User-agent: *\\nDisallow: /admin\\nDisallow: /api\\nSitemap: {APP_URL}/sitemap.xml'.",
+    "Update resources/views/library/index.blade.php and resources/views/library/show.blade.php stubs with real HTML: index shows search bar, category filter tabs, item grid cards (title, description excerpt, is_free badge, download count). Show page has item details, download button (free or pay-wall).",
+    "Update resources/views/profile.blade.php stub: form with full_name, id_number (write-only input), phone, address, city fields, save button, 'Delete my account' danger button."
+  ],
+  "acceptance_criteria": [
+    "`php artisan route:list` shows GET /library, GET /library/{id}/{slug}, POST /api/library/{id}/download, GET /api/library/search",
+    "`php artisan route:list` shows GET /sitemap.xml, GET /robots.txt",
+    "ProfileController encrypts id_number — raw value is never stored in DB",
+    "FULLTEXT search query returns results matching title or description",
+    "User deletion anonymises user record and creates audit log entry"
+  ],
+  "verification": [
+    "php artisan route:list",
+    "php artisan optimize"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
