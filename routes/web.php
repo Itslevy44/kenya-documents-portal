@@ -1,71 +1,98 @@
 <?php
 
+use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\LibraryController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RobotsController;
+use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| Routes are registered here and loaded by the RouteServiceProvider.
-| All routes use web middleware (sessions, CSRF).
-|
 */
 
+// ===== PUBLIC ROUTES =====
+
 Route::get('/', function () {
-    return view('home');
+    $categories = \App\Models\Category::where('is_active', true)->orderBy('sort_order')->get();
+    return view('home', compact('categories'));
 })->name('home');
 
-// Auth routes
+// Auth pages
 Route::get('/signin', function () {
     return view('signin');
 })->name('signin');
 
+Route::post('/signout', [\App\Http\Controllers\AuthController::class, 'logout'])->name('signout');
+
 // Category / builder
 Route::get('/category/{slug}', function ($slug) {
-    return view('category', compact('slug'));
+    $category = \App\Models\Category::where('slug', $slug)->where('is_active', true)->firstOrFail();
+    $templates = $category->templates()->where('is_active', true)->orderBy('sort_order')->get();
+    return view('category', compact('category', 'templates'));
 })->name('category');
 
-Route::get('/builder/{slug}', function ($slug) {
-    return view('builder', compact('slug'));
-})->name('builder');
+Route::get('/builder/{slug}', [DocumentController::class, 'show'])->name('document.show');
 
-Route::get('/preview/{token}', function ($token) {
-    return view('preview', compact('token'));
+Route::get('/preview', function () {
+    return view('preview');
 })->name('preview');
 
-// Payment & download
-Route::get('/payment/{token}', function ($token) {
-    return view('payment', compact('token'));
-})->name('payment');
+Route::get('/preview-file/{token}', [DocumentController::class, 'previewFile'])
+    ->name('document.preview-file');
 
-Route::get('/download/{token}', function ($token) {
-    return view('download', compact('token'));
-})->name('download');
+// Payment pages
+Route::get('/payment/{token}', [PaymentController::class, 'show'])->name('payment');
+
+// Download page (after payment)
+Route::get('/download/{token}', [DocumentController::class, 'downloadPage'])
+    ->name('document.download-page');
+
+// File download (PDF or Word)
+Route::get('/download/{token}/{type}', [DocumentController::class, 'download'])
+    ->where('type', 'pdf|word')
+    ->name('document.download');
 
 // Library
-Route::get('/library', function () {
-    return view('library.index');
-})->name('library.index');
+Route::get('/library', [LibraryController::class, 'index'])->name('library.index');
+Route::get('/library/search', [LibraryController::class, 'search'])->name('library.search');
+Route::get('/library/{id}/{slug}', [LibraryController::class, 'show'])
+    ->where('id', '[0-9]+')
+    ->name('library.show');
+Route::get('/library/{id}/download', [LibraryController::class, 'download'])
+    ->where('id', '[0-9]+')
+    ->name('library.download');
 
-Route::get('/library/{slug}', function ($slug) {
-    return view('library.show', compact('slug'));
-})->name('library.show');
+// Sitemap & robots
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+Route::get('/robots.txt', [RobotsController::class, 'index'])->name('robots');
 
-// User account
+// ===== AUTHENTICATED ROUTES =====
+
 Route::middleware('auth')->group(function () {
+    // My documents
     Route::get('/my-documents', function () {
-        return view('my-documents');
+        $documents = \App\Models\GeneratedDocument::where('user_id', auth()->id())
+            ->with('template')
+            ->orderByDesc('created_at')
+            ->paginate(10);
+        return view('my-documents', compact('documents'));
     })->name('my-documents');
 
-    Route::get('/profile', function () {
-        return view('profile');
-    })->name('profile');
+    // Profile
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile');
+    Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
+
+    // Account deletion
+    Route::delete('/account', [\App\Http\Controllers\UserController::class, 'destroy'])->name('account.destroy');
 });
 
-// Admin
+// ===== ADMIN ROUTES =====
+
 Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('admin.dashboard');
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
 });

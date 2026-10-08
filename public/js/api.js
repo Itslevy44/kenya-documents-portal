@@ -115,6 +115,6 @@ const api = (() => {
         post:   (url, data, options = {}) => request(url, { method: 'POST',   body: JSON.stringify(data), ...options }),
         put:    (url, data, options = {}) => request(url, { method: 'PUT',    body: JSON.stringify(data), ...options }),
         patch:  (url, data, options = {}) => request(url, { method: 'PATCH',  body: JSON.stringify(data), ...options }),
-        delete: (url, options = {})       => request(url, { method: 'DELETE', ...options }),
+        delete: (url, data, options = {}) => request(url, { method: 'DELETE', body: data ? JSON.stringify(data) : undefined, ...options }),
     };
 })();
