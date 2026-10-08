@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Download extends Model
 {
+    public $timestamps = false;
     protected $fillable = [
         'generated_document_id',
         'user_id',
