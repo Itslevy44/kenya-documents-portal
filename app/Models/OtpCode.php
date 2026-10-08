@@ -7,12 +7,23 @@ use Illuminate\Database\Eloquent\Builder;
 
 class OtpCode extends Model
 {
+    public $timestamps = false; // Table only has created_at, set manually
+    public const CREATED_AT = 'created_at';
+    public const UPDATED_AT = null;
+
     protected $fillable = [
         'phone',
         'code',
         'expires_at',
         'used_at',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function ($model) {
+            $model->created_at = now();
+        });
+    }
 
     protected function casts(): array
     {
