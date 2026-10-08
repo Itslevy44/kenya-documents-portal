@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class MissingDocumentRequest extends Model
+{
+    const UPDATED_AT = null;
+
+    protected $fillable = [
+        'user_id',
+        'search_query',
+        'document_description',
+        'phone',
+    ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+}

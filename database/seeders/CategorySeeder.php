@@ -2,37 +2,77 @@
 
 namespace Database\Seeders;
 
+use App\Models\Category;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class CategorySeeder extends Seeder
 {
     /**
-     * Seed document categories.
-     * Full data populated in FEAT-002.
+     * Seed 7 document categories.
      */
     public function run(): void
     {
         $categories = [
-            ['name' => 'Affidavits',          'icon' => '⚖️',  'description' => 'Sworn legal statements'],
-            ['name' => 'Letters',             'icon' => '✉️',  'description' => 'Official correspondence'],
-            ['name' => 'Land & Property',     'icon' => '🏡',  'description' => 'Land transfer and property documents'],
-            ['name' => 'Business',            'icon' => '💼',  'description' => 'Business registration and agreements'],
-            ['name' => 'Personal',            'icon' => '👤',  'description' => 'Personal documents and declarations'],
-            ['name' => 'Government Forms',    'icon' => '🏛️',  'description' => 'Standard government application forms'],
+            [
+                'name'        => 'Letters',
+                'slug'        => 'letters',
+                'description' => 'Official letters and correspondence',
+                'icon'        => '✉️',
+                'is_active'   => true,
+                'sort_order'  => 1,
+            ],
+            [
+                'name'        => 'Affidavits',
+                'slug'        => 'affidavits',
+                'description' => 'Sworn legal statements and affidavits',
+                'icon'        => '⚖️',
+                'is_active'   => true,
+                'sort_order'  => 2,
+            ],
+            [
+                'name'        => 'Business Documents',
+                'slug'        => 'business',
+                'description' => 'Business letters, introductions, and agreements',
+                'icon'        => '💼',
+                'is_active'   => true,
+                'sort_order'  => 3,
+            ],
+            [
+                'name'        => 'School Documents',
+                'slug'        => 'school',
+                'description' => 'School letters and education-related documents',
+                'icon'        => '🎓',
+                'is_active'   => true,
+                'sort_order'  => 4,
+            ],
+            [
+                'name'        => 'Legal Agreements',
+                'slug'        => 'agreements',
+                'description' => 'Legally binding agreements and contracts',
+                'icon'        => '📋',
+                'is_active'   => true,
+                'sort_order'  => 5,
+            ],
+            [
+                'name'        => 'Employment',
+                'slug'        => 'employment',
+                'description' => 'Employment letters and work-related documents',
+                'icon'        => '👔',
+                'is_active'   => true,
+                'sort_order'  => 6,
+            ],
+            [
+                'name'        => 'Community',
+                'slug'        => 'community',
+                'description' => 'Community and CBO documents',
+                'icon'        => '🤝',
+                'is_active'   => true,
+                'sort_order'  => 7,
+            ],
         ];
 
-        foreach ($categories as $cat) {
-            DB::table('categories')->updateOrInsert(
-                ['slug' => Str::slug($cat['name'])],
-                array_merge($cat, [
-                    'slug'       => Str::slug($cat['name']),
-                    'is_active'  => true,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ])
-            );
+        foreach ($categories as $data) {
+            Category::updateOrCreate(['slug' => $data['slug']], $data);
         }
     }
 }
