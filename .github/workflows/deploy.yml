@@ -56,7 +56,7 @@ jobs:
 
       # ── Deploy Laravel app to htdocs/laravel_app/ ──────────────────────
       - name: Deploy Laravel app via FTP
-        uses: SamKirkland/FTP-Deploy-Action@latest
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
@@ -78,7 +78,7 @@ jobs:
 
       # ── Deploy public/ contents to htdocs/ (web root) ──────────────────
       - name: Deploy public folder to htdocs via FTP
-        uses: SamKirkland/FTP-Deploy-Action@latest
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
