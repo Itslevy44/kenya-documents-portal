@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Create all 15 database migration files in strict dependency order. Each file is a standard Laravel Migration class using Schema::create() or Schema::table(). No FK violations: parent tables are always created before child tables. The promo_code FK on payments is deferred to migration #15 (after promo_codes exists). Depends on FEAT-001 (Laravel skeleton must exist).",
-  "status": "pending",
+  "status": "completed",
   "steps": [
     "Create database/migrations/2024_01_01_000001_create_users_table.php: id(), string('phone')->unique(), string('name'), string('email')->nullable(), boolean('is_admin')->default(false), timestamps()",
     "Create database/migrations/2024_01_01_000002_create_otp_codes_table.php: id(), string('phone'), string('code') [hashed SHA-256], timestamp('expires_at'), timestamp('used_at')->nullable(), timestamp('created_at')->nullable()",
@@ -30,5 +30,5 @@
     "php artisan migrate:fresh"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 15 migration files created in database/migrations/ with correct timestamps and table definitions. Dependency order respected: users, otp_codes, categories, templates, generated_documents, library_items (with FULLTEXT index via DB::statement), payments (promo_code_id as unsignedBigInteger nullable, no FK), downloads, audit_logs, edit_window columns on generated_documents, user_profiles, missing_document_requests, promo_codes, promo_code_uses, FK on payments.promo_code_id. PHP not in PATH on this machine so migrate --pretend could not be run; migrations verified by static review against spec."
 }
