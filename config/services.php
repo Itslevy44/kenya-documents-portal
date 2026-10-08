@@ -42,8 +42,9 @@ return [
     ],
 
     'payhero' => [
-        'api_key'        => env('PAYHERO_API_KEY'),
+        'basic_auth'     => env('PAYHERO_BASIC_AUTH'),
         'channel_id'     => env('PAYHERO_CHANNEL_ID'),
+        'account_id'     => env('PAYHERO_ACCOUNT_ID'),
         'webhook_secret' => env('PAYHERO_WEBHOOK_SECRET'),
     ],
 
