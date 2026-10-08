@@ -36,20 +36,70 @@ jobs:
           COMPOSER_POLICY_ADVISORIES_BLOCK: 0
 
       - name: Set up .env and generate app key
+        env:
+          APP_KEY: ${{ secrets.APP_KEY }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_DATABASE: ${{ secrets.DB_DATABASE }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          AT_USERNAME: ${{ secrets.AT_USERNAME }}
+          AT_API_KEY: ${{ secrets.AT_API_KEY }}
+          PAYHERO_BASIC_AUTH: ${{ secrets.PAYHERO_BASIC_AUTH }}
+          PAYHERO_CHANNEL_ID: ${{ secrets.PAYHERO_CHANNEL_ID }}
+          PAYHERO_WEBHOOK_SECRET: ${{ secrets.PAYHERO_WEBHOOK_SECRET }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
         run: |
           cp .env.example .env
-          sed -i 's|APP_KEY=|APP_KEY=${{ secrets.APP_KEY }}|' .env
-          sed -i 's|DB_HOST=.*|DB_HOST=${{ secrets.DB_HOST }}|' .env
-          sed -i 's|DB_DATABASE=.*|DB_DATABASE=${{ secrets.DB_DATABASE }}|' .env
-          sed -i 's|DB_USERNAME=.*|DB_USERNAME=${{ secrets.DB_USERNAME }}|' .env
-          sed -i 's|DB_PASSWORD=.*|DB_PASSWORD=${{ secrets.DB_PASSWORD }}|' .env
-          sed -i 's|AT_USERNAME=.*|AT_USERNAME=${{ secrets.AT_USERNAME }}|' .env
-          sed -i 's|AT_API_KEY=.*|AT_API_KEY=${{ secrets.AT_API_KEY }}|' .env
-          sed -i 's|PAYHERO_BASIC_AUTH=.*|PAYHERO_BASIC_AUTH=${{ secrets.PAYHERO_BASIC_AUTH }}|' .env
-          sed -i 's|PAYHERO_CHANNEL_ID=.*|PAYHERO_CHANNEL_ID=${{ secrets.PAYHERO_CHANNEL_ID }}|' .env
-          sed -i 's|PAYHERO_WEBHOOK_SECRET=.*|PAYHERO_WEBHOOK_SECRET=${{ secrets.PAYHERO_WEBHOOK_SECRET }}|' .env
-          sed -i 's|TELEGRAM_BOT_TOKEN=.*|TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}|' .env
-          sed -i 's|TELEGRAM_CHANNEL_ID=.*|TELEGRAM_CHANNEL_ID=${{ secrets.TELEGRAM_CHANNEL_ID }}|' .env
+          php -r '
+            $vars = [
+              "APP_KEY"                => getenv("APP_KEY"),
+              "DB_HOST"                => getenv("DB_HOST"),
+              "DB_DATABASE"            => getenv("DB_DATABASE"),
+              "DB_USERNAME"            => getenv("DB_USERNAME"),
+              "DB_PASSWORD"            => getenv("DB_PASSWORD"),
+              "AT_USERNAME"            => getenv("AT_USERNAME"),
+              "AT_API_KEY"             => getenv("AT_API_KEY"),
+              "PAYHERO_BASIC_AUTH"     => getenv("PAYHERO_BASIC_AUTH"),
+              "PAYHERO_CHANNEL_ID"     => getenv("PAYHERO_CHANNEL_ID"),
+              "PAYHERO_WEBHOOK_SECRET" => getenv("PAYHERO_WEBHOOK_SECRET"),
+              "TELEGRAM_BOT_TOKEN"     => getenv("TELEGRAM_BOT_TOKEN"),
+              "TELEGRAM_CHANNEL_ID"    => getenv("TELEGRAM_CHANNEL_ID"),
+            ];
+            $lines = file(".env", FILE_IGNORE_NEW_LINES);
+            $updated = [];
+            foreach ($lines as &$line) {
+              $trimmed = trim($line);
+              if ($trimmed === "" || str_starts_with($trimmed, "#") || !str_contains($line, "=")) {
+                continue;
+              }
+              [$k] = explode("=", $line, 2);
+              $k = trim($k);
+              if (array_key_exists($k, $vars) && $vars[$k] !== false && $vars[$k] !== "") {
+                $v = trim($vars[$k]);
+                if ((str_starts_with($v, "\"") && str_ends_with($v, "\"")) || (str_starts_with($v, "\x27") && str_ends_with($v, "\x27"))) {
+                  $v = substr($v, 1, -1);
+                }
+                $escaped = str_replace(["\\", "\""], ["\\\\", "\\\""], $v);
+                $line = "{$k}=\"{$escaped}\"";
+                $updated[$k] = true;
+              }
+            }
+            foreach ($vars as $k => $v) {
+              if (!isset($updated[$k]) && $v !== false && $v !== "") {
+                $v = trim($v);
+                if ((str_starts_with($v, "\"") && str_ends_with($v, "\"")) || (str_starts_with($v, "\x27") && str_ends_with($v, "\x27"))) {
+                  $v = substr($v, 1, -1);
+                }
+                $escaped = str_replace(["\\", "\""], ["\\\\", "\\\""], $v);
+                $lines[] = "{$k}=\"{$escaped}\"";
+              }
+            }
+            file_put_contents(".env", implode("\n", $lines) . "\n");
+          '
+          if ! grep -q '^APP_KEY=.' .env; then
+            php artisan key:generate --force
+          fi
 
       - name: Optimise Laravel (cache config, routes, views)
         run: |
