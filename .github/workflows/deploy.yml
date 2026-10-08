@@ -25,12 +25,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: vendor
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
           restore-keys: |
             ${{ runner.os }}-composer-
 
       - name: Install Composer dependencies (production)
         run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+        env:
+          COMPOSER_NO_AUDIT: 1
 
       - name: Set up .env and generate app key
         run: |
