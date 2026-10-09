@@ -90,17 +90,30 @@ class LibraryController extends Controller
         ]);
 
         $query   = $request->input('q');
-        $results = LibraryItem::where('is_active', true)
-            ->whereRaw('MATCH(title, description) AGAINST(? IN BOOLEAN MODE)', [$query . '*'])
-            ->orderByDesc('download_count')
-            ->paginate(12);
+        $results = null;
+
+        if (\Illuminate\Support\Facades\DB::connection()->getDriverName() === 'mysql') {
+            try {
+                $cleanQuery = preg_replace('/[+\-><()~*\"@]+/', ' ', $query);
+                $cleanQuery = trim($cleanQuery);
+                if (!empty($cleanQuery)) {
+                    $results = LibraryItem::where('is_active', true)
+                        ->whereRaw('MATCH(title, description) AGAINST(? IN BOOLEAN MODE)', [$cleanQuery . '*'])
+                        ->orderByDesc('download_count')
+                        ->paginate(12);
+                }
+            } catch (\Exception $e) {
+                $results = null;
+            }
+        }
 
         // If no fulltext results, fall back to LIKE search
-        if ($results->isEmpty()) {
+        if (!$results || $results->isEmpty()) {
+            $escaped = str_replace(['%', '_'], ['\\%', '\\_'], $query);
             $results = LibraryItem::where('is_active', true)
-                ->where(function ($q) use ($query) {
-                    $q->where('title', 'LIKE', '%' . $query . '%')
-                      ->orWhere('description', 'LIKE', '%' . $query . '%');
+                ->where(function ($q) use ($escaped) {
+                    $q->where('title', 'LIKE', '%' . $escaped . '%')
+                      ->orWhere('description', 'LIKE', '%' . $escaped . '%');
                 })
                 ->orderByDesc('download_count')
                 ->paginate(12);

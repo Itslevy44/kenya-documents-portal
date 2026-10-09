@@ -112,6 +112,13 @@ class AuthController extends Controller
             ['name' => 'User ' . substr($phone, -4)] // Default name using last 4 digits
         );
 
+        // Auto-assign admin if matching configured ADMIN_PHONE
+        $adminPhone = config('services.admin_phone');
+        if ($adminPhone && $phone === $adminPhone && !$user->is_admin) {
+            $user->is_admin = true;
+            $user->save();
+        }
+
         // Start session
         Auth::login($user, true);
 

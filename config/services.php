@@ -53,4 +53,6 @@ return [
         'channel_id' => env('TELEGRAM_CHANNEL_ID'),
     ],
 
+    'admin_phone' => env('ADMIN_PHONE'),
+
 ];

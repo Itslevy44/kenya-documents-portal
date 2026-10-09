@@ -24,7 +24,9 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        DB::statement('ALTER TABLE library_items ADD FULLTEXT ft_library_title_desc (title, description)');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE library_items ADD FULLTEXT ft_library_title_desc (title, description)');
+        }
     }
 
     public function down(): void
