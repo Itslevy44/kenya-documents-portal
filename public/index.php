@@ -9,6 +9,20 @@ $basePath = file_exists(__DIR__.'/laravel_app/vendor/autoload.php')
     ? __DIR__.'/laravel_app'
     : __DIR__.'/..';
 
+// Ensure required runtime storage directories exist on shared hosting
+$storageDirs = [
+    $basePath.'/storage/framework/views',
+    $basePath.'/storage/framework/sessions',
+    $basePath.'/storage/framework/cache/data',
+    $basePath.'/storage/app/documents',
+    $basePath.'/storage/logs',
+];
+foreach ($storageDirs as $dir) {
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0775, true);
+    }
+}
+
 // Determine if the application is in maintenance mode...
 if (file_exists($maintenance = $basePath.'/storage/framework/maintenance.php')) {
     require $maintenance;

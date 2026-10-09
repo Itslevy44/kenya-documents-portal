@@ -101,11 +101,11 @@ jobs:
             php artisan key:generate --force
           fi
 
-      - name: Optimise Laravel (cache config, routes, views)
+      - name: Prepare storage and clean bootstrap cache
         run: |
-          php artisan config:cache
-          php artisan route:cache
-          php artisan view:cache
+          mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache/data storage/app/documents storage/logs
+          touch storage/framework/sessions/.gitkeep storage/framework/views/.gitkeep storage/framework/cache/data/.gitkeep storage/app/documents/.gitkeep storage/logs/.gitkeep
+          rm -f bootstrap/cache/*.php
 
       # ── Deploy Laravel app to kenyadocuments.online/htdocs/laravel_app/ ──
       - name: Deploy Laravel app via FTP
@@ -121,13 +121,11 @@ jobs:
             **/.github/**
             **/node_modules/**
             **/tests/**
-            **/storage/logs/**
-            **/storage/framework/cache/**
-            **/storage/framework/sessions/**
-            **/storage/framework/views/**
+            **/storage/logs/*.log
             **/public/**
             **/.env.example
             **/database/*.sql
+            **/bootstrap/cache/*.php
 
       # ── Deploy public/ contents to kenyadocuments.online/htdocs/ (web root) ──
       - name: Deploy public folder to htdocs via FTP

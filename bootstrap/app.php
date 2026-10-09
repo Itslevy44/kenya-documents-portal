@@ -11,6 +11,11 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->registered(function ($app) {
+        if (basename(dirname(__DIR__)) === 'laravel_app') {
+            $app->usePublicPath(dirname(dirname(__DIR__)));
+        }
+    })
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'auth' => \App\Http\Middleware\AuthMiddleware::class,
