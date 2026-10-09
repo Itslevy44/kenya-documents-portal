@@ -51,6 +51,11 @@ class CvController extends Controller
      */
     public function analyzeApi(Request $request)
     {
+        $request->validate([
+            'cv_file' => 'nullable|file|mimes:txt,pdf,docx,doc|max:5120',
+            'cv_text' => 'nullable|string|max:20000',
+        ]);
+
         $cvText = '';
 
         if ($request->hasFile('cv_file')) {

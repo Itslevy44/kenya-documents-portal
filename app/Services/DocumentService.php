@@ -370,6 +370,7 @@ class DocumentService
                 $this->processWordContentBlock($section, $block, $formData);
             }
         }
+    }
 
     /**
      * Process a content block for Word document
