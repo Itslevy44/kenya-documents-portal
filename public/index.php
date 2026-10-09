@@ -28,6 +28,14 @@ try {
         }
     }
 
+    // Automatically purge stale CI cache files on shared hosting
+    $staleCacheFiles = glob($basePath.'/bootstrap/cache/*.php');
+    if ($staleCacheFiles) {
+        foreach ($staleCacheFiles as $cacheFile) {
+            @unlink($cacheFile);
+        }
+    }
+
     // Determine if the application is in maintenance mode...
     if (file_exists($maintenance = $basePath.'/storage/framework/maintenance.php')) {
         require $maintenance;
