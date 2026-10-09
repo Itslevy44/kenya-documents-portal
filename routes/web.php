@@ -7,6 +7,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RobotsController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\CvController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -67,6 +68,9 @@ Route::get('/library/{id}/download', [LibraryController::class, 'download'])
     ->where('id', '[0-9]+')
     ->name('library.download');
 
+// CV Assistant
+Route::get('/cv-assistant', [CvController::class, 'index'])->name('cv.assistant');
+
 // Sitemap & robots
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/robots.txt', [RobotsController::class, 'index'])->name('robots');
@@ -95,4 +99,20 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+});
+
+// ===== SAFE MIGRATION RUNNER FOR SHARED HOSTING =====
+Route::get('/run-migrations', function () {
+    $secret = request('secret');
+    if ($secret !== 'kenyadocs2026' && (!auth()->check() || !auth()->user()->is_admin)) {
+        abort(403, 'Unauthorized.');
+    }
+
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        $output = \Illuminate\Support\Facades\Artisan::output();
+        return response('<div style="font-family:sans-serif;padding:30px;"><h2>Migrations Output:</h2><pre>' . htmlspecialchars($output) . '</pre><p><a href="/">&larr; Back to Home</a></p></div>');
+    } catch (\Throwable $e) {
+        return response('<div style="font-family:sans-serif;padding:30px;color:red;"><h2>Migration Failed:</h2><p>' . htmlspecialchars($e->getMessage()) . '</p></div>', 500);
+    }
 });

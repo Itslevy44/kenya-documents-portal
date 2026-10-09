@@ -46,6 +46,8 @@ try {
         $basePath.'/storage/framework/cache/data',
         $basePath.'/storage/app/documents',
         $basePath.'/storage/logs',
+        $basePath.'/storage/fonts',
+        $basePath.'/public',
     ];
     foreach ($storageDirs as $dir) {
         if (!is_dir($dir)) {

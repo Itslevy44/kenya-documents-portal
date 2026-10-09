@@ -7,16 +7,34 @@ use Illuminate\Support\Facades\Log;
 
 class AfricasTalkingService
 {
-    protected AfricasTalking $at;
+    protected ?AfricasTalking $at = null;
     protected string $senderId;
+
+    /**
+     * Whether this service is disabled (missing/invalid credentials)
+     */
+    protected bool $disabled = false;
 
     public function __construct()
     {
-        $username = config('services.africastalking.username');
-        $apiKey = config('services.africastalking.api_key');
-        $this->senderId = config('services.africastalking.sender_id');
+        try {
+            $username = config('services.africastalking.username');
+            $apiKey   = config('services.africastalking.api_key');
+            $this->senderId = (string) config('services.africastalking.sender_id', '');
 
-        $this->at = new AfricasTalking($username, $apiKey);
+            if (empty($username) || empty($apiKey)) {
+                $this->disabled = true;
+                Log::warning('AfricasTalkingService: username or api_key is missing. SMS sending is disabled.');
+                return;
+            }
+
+            $this->at = new AfricasTalking($username, $apiKey);
+        } catch (\Throwable $e) {
+            $this->disabled = true;
+            Log::error('AfricasTalkingService: constructor failed — SMS sending is disabled.', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -28,15 +46,22 @@ class AfricasTalkingService
      */
     public function sendSms(string $phone, string $message): bool
     {
+        if ($this->disabled || $this->at === null) {
+            Log::warning('AfricasTalkingService: sendSms called but service is disabled.', [
+                'phone' => $phone,
+            ]);
+            return false;
+        }
+
         try {
             // Convert 07XXXXXXXX to +254XXXXXXXX
             $formattedPhone = $this->formatPhoneNumber($phone);
 
-            $sms = $this->at->sms();
+            $sms    = $this->at->sms();
             $result = $sms->send([
-                'to' => $formattedPhone,
+                'to'      => $formattedPhone,
                 'message' => $message,
-                'from' => $this->senderId,
+                'from'    => $this->senderId,
             ]);
 
             // Check if message was sent successfully
@@ -44,18 +69,18 @@ class AfricasTalkingService
                 $result['data']['SMSMessageData']['Recipients'][0]['status'] === 'Success') {
                 Log::info('SMS sent successfully', [
                     'phone' => $phone,
-                    'cost' => $result['data']['SMSMessageData']['Recipients'][0]['cost'] ?? null,
+                    'cost'  => $result['data']['SMSMessageData']['Recipients'][0]['cost'] ?? null,
                 ]);
                 return true;
             }
 
             Log::warning('SMS sending failed', [
-                'phone' => $phone,
+                'phone'  => $phone,
                 'result' => $result,
             ]);
             return false;
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('SMS exception', [
                 'phone' => $phone,
                 'error' => $e->getMessage(),

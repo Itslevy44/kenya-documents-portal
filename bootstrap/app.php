@@ -12,8 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->registered(function ($app) {
-        if (basename(dirname(__DIR__)) === 'laravel_app') {
-            $app->usePublicPath(dirname(dirname(__DIR__)));
+        $htdocs = dirname(dirname(__DIR__));
+        if (basename(dirname(__DIR__)) === 'laravel_app' && is_dir($htdocs)) {
+            $app->usePublicPath($htdocs);
+        } elseif (is_dir(dirname(__DIR__) . '/public')) {
+            $app->usePublicPath(dirname(__DIR__) . '/public');
         }
     })
     ->withMiddleware(function (Middleware $middleware) {

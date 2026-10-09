@@ -196,22 +196,70 @@ class DocumentService
         $definition = $template->definition;
         $formData = $doc->form_data;
         
-        $html = '<div style="padding: 20px;">';
+        $html = '<div style="padding: 20px; font-family: \'Times New Roman\', Times, serif; font-size: 12pt; line-height: 1.6; color: #111;">';
         
         // Add title
         if (isset($definition['title'])) {
-            $html .= '<h1>' . htmlspecialchars($definition['title']) . '</h1>';
+            $html .= '<h1 style="text-align: center; font-size: 16pt; font-weight: bold; text-transform: uppercase; margin-bottom: 24px;">' . htmlspecialchars($definition['title']) . '</h1>';
         }
         
-        // Process content blocks
-        if (isset($definition['content']) && is_array($definition['content'])) {
+        // Process sections format (used in templates)
+        if (isset($definition['sections']) && is_array($definition['sections'])) {
+            foreach ($definition['sections'] as $sec) {
+                // Style 1: heading + body_template
+                if (isset($sec['body_template'])) {
+                    if (!empty($sec['heading'])) {
+                        $html .= '<h3 style="font-size: 13pt; font-weight: bold; margin-top: 18px; margin-bottom: 8px;">' . htmlspecialchars($this->replacePlaceholders($sec['heading'], $formData)) . '</h3>';
+                    }
+                    $bodyText = $this->replacePlaceholders($sec['body_template'], $formData);
+                    $html .= '<div style="margin-bottom: 16px; white-space: pre-wrap;">' . nl2br(htmlspecialchars($bodyText)) . '</div>';
+                    continue;
+                }
+
+                // Style 2: type + content
+                $type = $sec['type'] ?? 'body';
+                $content = $this->replacePlaceholders($sec['content'] ?? '', $formData);
+
+                switch ($type) {
+                    case 'header':
+                        $html .= '<div style="text-align: left; margin-bottom: 20px; white-space: pre-wrap;">' . nl2br(htmlspecialchars($content)) . '</div>';
+                        break;
+                    case 'recipient':
+                        $html .= '<div style="text-align: left; margin-bottom: 20px; font-weight: bold; white-space: pre-wrap;">' . nl2br(htmlspecialchars($content)) . '</div>';
+                        break;
+                    case 'subject':
+                        $html .= '<div style="font-weight: bold; text-decoration: underline; margin-bottom: 16px; font-size: 12.5pt;">' . htmlspecialchars($content) . '</div>';
+                        break;
+                    case 'salutation':
+                        $html .= '<div style="margin-bottom: 12px; font-weight: bold;">' . htmlspecialchars($content) . '</div>';
+                        break;
+                    case 'section_title':
+                        $html .= '<h3 style="font-size: 13pt; font-weight: bold; margin-top: 20px; margin-bottom: 8px; border-bottom: 1px solid #ccc; padding-bottom: 4px;">' . htmlspecialchars($content) . '</h3>';
+                        break;
+                    case 'preamble':
+                        $html .= '<div style="margin-bottom: 16px; text-align: justify; white-space: pre-wrap;">' . nl2br(htmlspecialchars($content)) . '</div>';
+                        break;
+                    case 'jurat':
+                        $html .= '<div style="margin-top: 30px; padding: 14px; border: 1px solid #999; background: #fafafa; white-space: pre-wrap;">' . nl2br(htmlspecialchars($content)) . '</div>';
+                        break;
+                    case 'notice':
+                        $html .= '<div style="margin-top: 20px; font-size: 10pt; font-style: italic; color: #555;">' . nl2br(htmlspecialchars($content)) . '</div>';
+                        break;
+                    case 'closing':
+                        $html .= '<div style="margin-top: 24px; white-space: pre-wrap;">' . nl2br(htmlspecialchars($content)) . '</div>';
+                        break;
+                    default:
+                        $html .= '<div style="margin-bottom: 14px; text-align: justify; white-space: pre-wrap;">' . nl2br(htmlspecialchars($content)) . '</div>';
+                        break;
+                }
+            }
+        }
+        // Process content blocks format
+        elseif (isset($definition['content']) && is_array($definition['content'])) {
             foreach ($definition['content'] as $block) {
                 $html .= $this->processContentBlock($block, $formData);
             }
         }
-        
-        // Add date
-        $html .= '<div class="date">Date: ' . now()->format('d/m/Y') . '</div>';
         
         $html .= '</div>';
         
@@ -232,14 +280,14 @@ class DocumentService
         switch ($type) {
             case 'heading':
                 $level = $block['level'] ?? 2;
-                return '<h' . $level . '>' . htmlspecialchars($content) . '</h' . $level . '>';
+                return '<h' . $level . ' style="font-weight: bold; margin-top: 16px; margin-bottom: 8px;">' . htmlspecialchars($content) . '</h' . $level . '>';
                 
             case 'paragraph':
-                return '<p>' . nl2br(htmlspecialchars($content)) . '</p>';
+                return '<p style="margin-bottom: 12px; text-align: justify;">' . nl2br(htmlspecialchars($content)) . '</p>';
                 
             case 'list':
                 $items = $block['items'] ?? [];
-                $html = '<ul>';
+                $html = '<ul style="margin-bottom: 12px; padding-left: 20px;">';
                 foreach ($items as $item) {
                     $html .= '<li>' . htmlspecialchars($this->replacePlaceholders($item, $formData)) . '</li>';
                 }
@@ -247,7 +295,7 @@ class DocumentService
                 return $html;
                 
             default:
-                return '<p>' . htmlspecialchars($content) . '</p>';
+                return '<p style="margin-bottom: 12px;">' . htmlspecialchars($content) . '</p>';
         }
     }
 
@@ -258,7 +306,7 @@ class DocumentService
     {
         return preg_replace_callback('/\{\{([a-zA-Z0-9_]+)\}\}/', function($matches) use ($formData) {
             $key = $matches[1];
-            return $formData[$key] ?? '[' . $key . ']';
+            return isset($formData[$key]) && $formData[$key] !== '' ? $formData[$key] : '[' . $key . ']';
         }, $content);
     }
 
@@ -281,17 +329,47 @@ class DocumentService
             $section->addTextBreak(1);
         }
         
+        // Process sections format
+        if (isset($definition['sections']) && is_array($definition['sections'])) {
+            foreach ($definition['sections'] as $sec) {
+                if (isset($sec['body_template'])) {
+                    if (!empty($sec['heading'])) {
+                        $section->addText(
+                            $this->replacePlaceholders($sec['heading'], $formData),
+                            ['bold' => true, 'size' => 13],
+                            ['spaceBefore' => 180, 'spaceAfter' => 80]
+                        );
+                    }
+                    $lines = explode("\n", $this->replacePlaceholders($sec['body_template'], $formData));
+                    foreach ($lines as $line) {
+                        $section->addText($line, ['size' => 12]);
+                    }
+                    $section->addTextBreak(1);
+                    continue;
+                }
+
+                $type = $sec['type'] ?? 'body';
+                $content = $this->replacePlaceholders($sec['content'] ?? '', $formData);
+                $lines = explode("\n", $content);
+
+                if ($type === 'subject') {
+                    $section->addText($content, ['bold' => true, 'underline' => 'single', 'size' => 12.5], ['spaceBefore' => 120, 'spaceAfter' => 120]);
+                } elseif ($type === 'section_title' || $type === 'heading') {
+                    $section->addText($content, ['bold' => true, 'size' => 13], ['spaceBefore' => 180, 'spaceAfter' => 80]);
+                } else {
+                    foreach ($lines as $l) {
+                        $section->addText($l, ['size' => 12]);
+                    }
+                    $section->addTextBreak(1);
+                }
+            }
+        }
         // Process content blocks
-        if (isset($definition['content']) && is_array($definition['content'])) {
+        elseif (isset($definition['content']) && is_array($definition['content'])) {
             foreach ($definition['content'] as $block) {
                 $this->processWordContentBlock($section, $block, $formData);
             }
         }
-        
-        // Add date
-        $section->addTextBreak(1);
-        $section->addText('Date: ' . now()->format('d/m/Y'), ['size' => 12]);
-    }
 
     /**
      * Process a content block for Word document

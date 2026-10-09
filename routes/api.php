@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CvController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\MissingDocumentController;
 use App\Http\Controllers\PaymentController;
@@ -72,6 +73,10 @@ Route::post('/promo/validate', function (\Illuminate\Http\Request $request) {
 // ===== MISSING DOCUMENTS =====
 Route::post('/missing-documents', [MissingDocumentController::class, 'store'])
     ->name('missing-documents.store');
+
+// ===== CV ASSISTANT =====
+Route::post('/cv/generate', [CvController::class, 'generateApi'])->name('cv.generate-api');
+Route::post('/cv/analyze', [CvController::class, 'analyzeApi'])->name('cv.analyze-api');
 
 // ===== WEBHOOKS =====
 // API routes don't use CSRF (web middleware group), so no exclusion needed

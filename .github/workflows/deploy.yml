@@ -122,7 +122,6 @@ jobs:
             **/node_modules/**
             **/tests/**
             **/storage/logs/*.log
-            **/public/**
             **/.env.example
             **/database/*.sql
             **/bootstrap/cache/*.php

@@ -21,7 +21,13 @@ class AuthController extends Controller
     }
 
     /**
-     * Send OTP to user's phone
+     * Send OTP to user's phone.
+     *
+     * The OTP is always persisted to the database first.
+     * If the AfricasTalking SMS delivery fails (bad credentials, network error, etc.)
+     * we still return HTTP 200 so the UI does not break — the user is shown a soft
+     * advisory message.  When APP_DEBUG=true the plain-text OTP is included in the
+     * JSON response as `debug_otp` to facilitate testing without a live AT account.
      */
     public function sendOtp(Request $request)
     {
@@ -40,34 +46,53 @@ class AuthController extends Controller
             ]);
         }
 
-        // Generate 6-digit OTP
-        $otpCode = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+        try {
+            // Generate 6-digit OTP
+            $otpCode = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
 
-        // Hash and store OTP
-        OtpCode::create([
-            'phone' => $phone,
-            'code' => Hash::make($otpCode),
-            'expires_at' => now()->addMinutes(10),
-        ]);
+            // Always persist the OTP — even if SMS later fails the user can still verify
+            OtpCode::create([
+                'phone'      => $phone,
+                'code'       => Hash::make($otpCode),
+                'expires_at' => now()->addMinutes(10),
+            ]);
 
-        // Send SMS
-        $message = "Your Kenya Docs verification code is: {$otpCode}. Valid for 10 minutes. Do not share this code.";
-        $sent = $this->atService->sendSms($phone, $message);
+            // Increment rate limiter before attempting SMS so it counts even on failure
+            RateLimiter::hit($key, 600); // 10 minutes
 
-        if (!$sent) {
+            // Attempt SMS delivery
+            $message = "Your Kenya Docs verification code is: {$otpCode}. Valid for 10 minutes. Do not share this code.";
+            $sent    = $this->atService->sendSms($phone, $message);
+
+            $response = ['success' => true];
+
+            if ($sent) {
+                $response['message'] = 'OTP sent successfully to ' . $phone;
+            } else {
+                // SMS failed — inform user but do not return 500
+                \Illuminate\Support\Facades\Log::warning('OTP SMS delivery failed', ['phone' => $phone]);
+                $response['message'] = 'OTP sent. If you do not receive an SMS, please check your number and try again.';
+            }
+
+            // Include plain OTP in response when APP_DEBUG is enabled (testing / staging only)
+            if (config('app.debug')) {
+                $response['debug_otp'] = $otpCode;
+            }
+
+            return response()->json($response);
+
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('sendOtp unexpected error', [
+                'phone' => $phone,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to send OTP. Please try again.',
+                'message' => 'An unexpected error occurred. Please try again later.',
             ], 500);
         }
-
-        // Increment rate limiter
-        RateLimiter::hit($key, 600); // 10 minutes
-
-        return response()->json([
-            'success' => true,
-            'message' => 'OTP sent successfully to ' . $phone,
-        ]);
     }
 
     /**

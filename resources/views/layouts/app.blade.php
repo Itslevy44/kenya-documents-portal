@@ -9,9 +9,18 @@
 
     <title>@yield('title', 'Kenya Docs') | Kenya Document Assistant</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/jpeg" href="/assets/images/favicon.jpg">
+    <link rel="shortcut icon" type="image/jpeg" href="/assets/images/favicon.jpg">
+
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 
     <!-- CSS -->
     <link rel="stylesheet" href="/css/app.css">
@@ -25,16 +34,23 @@
             --accent:         #FF8F00;
             --accent-light:   #FFB300;
             --accent-dark:    #E65100;
-            --bg:             #F5F5F5;
+            --bg:             #F4F6F4;
             --surface:        #FFFFFF;
-            --text:           #212121;
-            --text-muted:     #757575;
-            --border:         #E0E0E0;
+            --text:           #1A1A1A;
+            --text-muted:     #6B7280;
+            --border:         #E5E7EB;
             --error:          #C62828;
             --success:        #2E7D32;
-            --radius:         8px;
-            --shadow:         0 2px 8px rgba(0,0,0,.12);
+            --radius:         10px;
+            --radius-lg:      16px;
+            --shadow:         0 2px 8px rgba(0,0,0,.10);
+            --shadow-md:      0 4px 16px rgba(0,0,0,.12);
+            --shadow-lg:      0 8px 32px rgba(0,0,0,.16);
+            --card-hover-shadow: 0 12px 36px rgba(27,94,32,.18);
             --transition:     0.2s ease;
+            --gradient-hero:  linear-gradient(135deg, #0a3d12 0%, #1B5E20 45%, #2E7D32 100%);
+            --font-heading:   'Plus Jakarta Sans', system-ui, sans-serif;
+            --font-body:      'Inter', system-ui, sans-serif;
         }
     </style>
 
@@ -43,10 +59,10 @@
 <body>
 
     <!-- ===== HEADER ===== -->
-    <header class="site-header" role="banner">
+    <header class="site-header" role="banner" id="site-header">
         <div class="container header-inner">
             <a href="{{ route('home') }}" class="logo" aria-label="Kenya Docs Home">
-                <span class="logo-icon">🇰🇪</span>
+                <img src="/assets/images/logo.jpg" alt="Kenya Docs Logo" class="logo-img" width="36" height="36">
                 <span class="logo-text">Kenya<strong>Docs</strong></span>
             </a>
 
@@ -58,6 +74,7 @@
                 <ul>
                     <li><a href="{{ route('home') }}" @class(['active' => request()->routeIs('home')])>Home</a></li>
                     <li><a href="{{ route('library.index') }}" @class(['active' => request()->routeIs('library.*')])>Library</a></li>
+                    <li><a href="/cv-assistant" @class(['active' => request()->is('cv-assistant')])>CV Assistant</a></li>
                     @auth
                         <li><a href="{{ route('my-documents') }}" @class(['active' => request()->routeIs('my-documents')])>My Documents</a></li>
                         <li><a href="{{ route('profile') }}" @class(['active' => request()->routeIs('profile')])>Profile</a></li>
@@ -87,14 +104,17 @@
     <footer class="site-footer" role="contentinfo">
         <div class="container footer-inner">
             <div class="footer-brand">
-                <span class="logo-icon">🇰🇪</span>
-                <span class="logo-text">Kenya<strong>Docs</strong></span>
+                <a href="{{ route('home') }}" class="logo footer-logo" aria-label="Kenya Docs">
+                    <img src="/assets/images/logo.jpg" alt="Kenya Docs Logo" class="logo-img" width="30" height="30">
+                    <span class="logo-text">Kenya<strong>Docs</strong></span>
+                </a>
                 <p class="footer-tagline">Official Kenyan document templates at your fingertips.</p>
             </div>
             <nav class="footer-nav" aria-label="Footer navigation">
                 <ul>
                     <li><a href="{{ route('home') }}">Home</a></li>
                     <li><a href="{{ route('library.index') }}">Library</a></li>
+                    <li><a href="/cv-assistant">CV Assistant</a></li>
                     <li><a href="{{ route('signin') }}">Sign In</a></li>
                 </ul>
             </nav>
@@ -118,6 +138,19 @@
                 mainNav.classList.toggle('open');
             });
         }
+
+        // Glassmorphism header on scroll
+        const siteHeader = document.getElementById('site-header');
+        if (siteHeader) {
+            window.addEventListener('scroll', function () {
+                if (window.scrollY > 40) {
+                    siteHeader.classList.add('scrolled');
+                } else {
+                    siteHeader.classList.remove('scrolled');
+                }
+            }, { passive: true });
+        }
+
         // Register service worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
