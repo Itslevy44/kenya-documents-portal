@@ -61,6 +61,24 @@ try {
         }
     }
 
+    // Ensure APP_KEY exists and is a valid base64 key
+    $envFile = $basePath . '/.env';
+    if (file_exists($envFile)) {
+        $envContent = file_get_contents($envFile);
+        if (!preg_match('/^APP_KEY=base64:[A-Za-z0-9+\/]{43}=/m', $envContent)) {
+            $newKey = 'base64:' . base64_encode(random_bytes(32));
+            if (preg_match('/^APP_KEY=.*$/m', $envContent)) {
+                $envContent = preg_replace('/^APP_KEY=.*$/m', 'APP_KEY=' . $newKey, $envContent);
+            } else {
+                $envContent .= "\nAPP_KEY=" . $newKey . "\n";
+            }
+            @file_put_contents($envFile, $envContent);
+            putenv("APP_KEY={$newKey}");
+            $_ENV['APP_KEY'] = $newKey;
+            $_SERVER['APP_KEY'] = $newKey;
+        }
+    }
+
     // Determine if the application is in maintenance mode...
     if (file_exists($maintenance = $basePath.'/storage/framework/maintenance.php')) {
         require $maintenance;

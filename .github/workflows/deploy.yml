@@ -97,7 +97,7 @@ jobs:
             }
             file_put_contents(".env", implode("\n", $lines) . "\n");
           '
-          if ! grep -q '^APP_KEY=.' .env; then
+          if ! grep -q '^APP_KEY=base64:' .env; then
             php artisan key:generate --force
           fi
 
