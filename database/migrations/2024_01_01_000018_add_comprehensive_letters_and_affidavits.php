@@ -11,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        $lettersCat = Category::where('slug', 'letters')->first();
-        $affidavitsCat = Category::where('slug', 'affidavits')->first();
-
-        if (!$lettersCat || !$affidavitsCat) {
-            return;
-        }
+        $lettersCat = Category::firstOrCreate(
+            ['slug' => 'letters'],
+            ['name' => 'Letters', 'description' => 'Official letters and correspondence', 'icon' => '✉️', 'is_active' => true, 'sort_order' => 1]
+        );
+        $affidavitsCat = Category::firstOrCreate(
+            ['slug' => 'affidavits'],
+            ['name' => 'Affidavits', 'description' => 'Sworn legal statements and affidavits', 'icon' => '⚖️', 'is_active' => true, 'sort_order' => 2]
+        );
 
         $templates = [
             // =========================================================================

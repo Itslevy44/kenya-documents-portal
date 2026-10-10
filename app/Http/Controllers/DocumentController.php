@@ -214,6 +214,60 @@ class DocumentController extends Controller
         abort(403, 'Access denied.');
     }
 
+    // =========================================================================
+    // User Draft CRUD
+    // =========================================================================
+
+    /**
+     * Delete a draft document owned by the authenticated user
+     */
+    public function destroyDraft(string $token)
+    {
+        $doc = GeneratedDocument::where('session_token', $token)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        if ($doc->status === 'paid') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Paid documents cannot be deleted. Contact support if needed.',
+            ], 422);
+        }
+
+        // Clean up files
+        if ($doc->preview_path) {
+            $this->storageService->delete($doc->preview_path);
+        }
+        if ($doc->pdf_path) {
+            $this->storageService->delete($doc->pdf_path);
+        }
+        if ($doc->word_path) {
+            $this->storageService->delete($doc->word_path);
+        }
+
+        $doc->delete();
+
+        return response()->json(['success' => true, 'message' => 'Draft deleted successfully.']);
+    }
+
+    /**
+     * Rename / update the label of a draft document
+     */
+    public function renameDraft(Request $request, string $token)
+    {
+        $request->validate([
+            'label' => ['required', 'string', 'max:120'],
+        ]);
+
+        $doc = GeneratedDocument::where('session_token', $token)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        $doc->update(['label' => $request->label]);
+
+        return response()->json(['success' => true, 'message' => 'Document renamed.', 'label' => $request->label]);
+    }
+
     /**
      * Build validation rules from template schema
      */

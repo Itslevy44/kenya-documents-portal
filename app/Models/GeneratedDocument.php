@@ -47,6 +47,11 @@ class GeneratedDocument extends Model
         return $this->hasOne(Payment::class);
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
     public function downloads(): HasMany
     {
         return $this->hasMany(Download::class);

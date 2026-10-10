@@ -686,7 +686,7 @@ class TemplateSeeder extends Seeder
                     'price'            => $data['price'],
                     'schema'           => $data['schema'],
                     'definition'       => $data['definition'],
-                    'is_active'        => false,
+                    'is_active'        => true,
                     'sort_order'       => $data['sort_order'],
                     'meta_title'       => null,
                     'meta_description' => null,

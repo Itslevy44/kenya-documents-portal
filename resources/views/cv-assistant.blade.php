@@ -1,252 +1,332 @@
 @extends('layouts.app')
 
 @section('title', 'Smart CV Assistant & Resume Builder')
-@section('meta-description', 'Generate ATS-compliant Kenyan CVs in minutes, or upload your existing CV for automated audit, score analysis, and instant improvements.')
+@section('meta-description', 'Generate ATS-optimised Kenyan CVs in minutes, or paste your existing CV for an instant score, actionable feedback, and a professionally restructured version.')
 
 @section('content')
-<section class="section py-4" style="background: linear-gradient(180deg, #F0FDF4 0%, var(--bg, #F4F6F4) 100%);">
-    <div class="container">
-        <!-- Page Header -->
-        <div class="text-center mb-4">
-            <span class="badge badge-accent mb-2">⚡ Powered by KenyaDocs Intelligence</span>
-            <h1 class="section-title" style="font-size: clamp(1.8rem, 3.5vw, 2.6rem); font-weight: 800; color: var(--primary, #1B5E20);">
-                Kenyan Career &amp; CV Assistant
-            </h1>
-            <p class="section-subtitle" style="max-width: 680px; margin: 0 auto; font-size: 1.05rem;">
-                Craft a job-winning, ATS-friendly curriculum vitae tailored for the Kenyan job market, or audit your existing CV for instant improvements and recruiter-ready scoring.
-            </p>
-        </div>
 
-        <!-- Mode Tabs -->
-        <div class="cv-tab-container mb-4" style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
-            <button type="button" class="btn btn-primary cv-tab-btn active" id="tab-btn-generate" onclick="switchCvTab('generate')">
-                ✨ Generate New CV
+{{-- Page header --}}
+<div style="background:linear-gradient(160deg,#0a3d12 0%,#1B5E20 100%);color:#fff;padding:3rem 0 2.5rem;">
+    <div class="container" style="text-align:center;">
+        <span class="badge" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25);margin-bottom:1rem;font-size:.78rem;">⚡ Kenya Docs Intelligence</span>
+        <h1 style="font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:.75rem;">
+            Kenyan Career &amp; CV Assistant
+        </h1>
+        <p style="font-size:1.05rem;color:rgba(255,255,255,.8);max-width:640px;margin:0 auto;line-height:1.65;">
+            Build a job-winning, ATS-friendly CV for the Kenyan market — or audit your existing résumé for instant improvements and a professional ATS readiness score.
+        </p>
+
+        {{-- Mode tabs --}}
+        <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-top:2rem;">
+            <button type="button" id="tab-btn-generate"
+                    onclick="switchCvTab('generate')"
+                    class="btn btn-accent btn-lg cv-tab-active"
+                    style="min-width:200px;">
+                ✨ &nbsp;Generate New CV
             </button>
-            <button type="button" class="btn btn-outline cv-tab-btn" id="tab-btn-analyze" onclick="switchCvTab('analyze')">
-                🔍 Audit &amp; Modify My Existing CV
+            <button type="button" id="tab-btn-analyze"
+                    onclick="switchCvTab('analyze')"
+                    class="btn btn-outline-white btn-lg"
+                    style="min-width:200px;">
+                🔍 &nbsp;Audit My Existing CV
             </button>
         </div>
-
-        <!-- ========================================== -->
-        <!-- TAB 1: GENERATE CV                         -->
-        <!-- ========================================== -->
-        <div id="cv-panel-generate" class="card shadow-lg" style="max-width: 980px; margin: 0 auto; border-radius: 16px; border: 1px solid var(--border);">
-            <div class="card-body" style="padding: clamp(1.5rem, 3vw, 2.5rem);">
-                <div style="border-bottom: 2px solid var(--border); padding-bottom: 1rem; margin-bottom: 2rem;">
-                    <h2 style="font-size: 1.4rem; font-weight: 700; color: var(--primary);">CV Builder Wizard</h2>
-                    <p class="text-muted" style="font-size: .95rem; margin: 0;">Fill in your details to create an ATS-standard Kenyan CV formatted for corporate, NGO, and government applications.</p>
-                </div>
-
-                <form id="cv-generate-form" onsubmit="handleCvGenerate(event)">
-                    @csrf
-                    <!-- Personal Info -->
-                    <h3 style="font-size: 1.15rem; font-weight: 600; color: var(--text); margin-bottom: 1rem;">1. Personal &amp; Contact Information</h3>
-                    <div class="grid grid-2" style="gap: 1.25rem;">
-                        <div class="form-group">
-                            <label class="form-label" for="gen-name">Full Name *</label>
-                            <input type="text" id="gen-name" name="full_name" class="form-control" placeholder="e.g. Brian Kiprop Mwangi" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="gen-title">Target Job Title *</label>
-                            <input type="text" id="gen-title" name="job_title" class="form-control" placeholder="e.g. Senior Accountant / Logistics Officer" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="gen-phone">Phone Number (Kenyan Format) *</label>
-                            <input type="tel" id="gen-phone" name="phone" class="form-control" placeholder="07XXXXXXXX or +254XXXXXXXX" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="gen-email">Email Address *</label>
-                            <input type="email" id="gen-email" name="email" class="form-control" placeholder="name@example.com" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="gen-loc">Location / Town *</label>
-                            <input type="text" id="gen-loc" name="location" class="form-control" placeholder="e.g. Nairobi, Kenya" value="Nairobi, Kenya" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="gen-linkedin">LinkedIn / Portfolio URL (Optional)</label>
-                            <input type="url" id="gen-linkedin" name="linkedin" class="form-control" placeholder="https://linkedin.com/in/username">
-                        </div>
-                    </div>
-
-                    <!-- Professional Summary -->
-                    <h3 style="font-size: 1.15rem; font-weight: 600; color: var(--text); margin-top: 1.5rem; margin-bottom: 1rem;">2. Professional Summary</h3>
-                    <div class="form-group">
-                        <label class="form-label" for="gen-summary">Career Summary / Objective *</label>
-                        <textarea id="gen-summary" name="summary" class="form-control" rows="3" placeholder="Dedicated and results-driven professional with 4+ years of experience in financial reporting, auditing, and tax compliance..." required></textarea>
-                        <small class="form-hint" style="color: var(--text-muted); font-size: .82rem;">Highlight your years of experience, core expertise, and value proposition.</small>
-                    </div>
-
-                    <!-- Work Experience -->
-                    <h3 style="font-size: 1.15rem; font-weight: 600; color: var(--text); margin-top: 1.5rem; margin-bottom: 1rem;">3. Work Experience</h3>
-                    <div class="form-group">
-                        <label class="form-label" for="gen-exp">Job History &amp; Key Accomplishments</label>
-                        <textarea id="gen-exp" name="experience" class="form-control" rows="5" placeholder="Operations Manager | ABC Logistics Ltd, Nairobi (Jan 2021 – Present)&#10;• Spearheaded supply chain workflows, reducing delivery delays by 35%.&#10;• Managed a departmental budget of KSh 12M with zero audit queries.&#10;&#10;Junior Officer | XYZ Enterprise (2018 – 2020)&#10;• Coordinated customer logistics and stock reconciliations."></textarea>
-                    </div>
-
-                    <!-- Education -->
-                    <h3 style="font-size: 1.15rem; font-weight: 600; color: var(--text); margin-top: 1.5rem; margin-bottom: 1rem;">4. Education &amp; Academic Background</h3>
-                    <div class="form-group">
-                        <label class="form-label" for="gen-edu">Qualifications &amp; Institutions *</label>
-                        <textarea id="gen-edu" name="education" class="form-control" rows="3" placeholder="Bachelor of Commerce (Finance Option) | University of Nairobi (2015 – 2019)&#10;KCSE Certificate | Alliance High School (2010 – 2014)" required></textarea>
-                    </div>
-
-                    <!-- Skills & Certifications -->
-                    <h3 style="font-size: 1.15rem; font-weight: 600; color: var(--text); margin-top: 1.5rem; margin-bottom: 1rem;">5. Core Skills &amp; Certifications</h3>
-                    <div class="grid grid-2" style="gap: 1.25rem;">
-                        <div class="form-group">
-                            <label class="form-label" for="gen-skills">Skills (Comma-separated) *</label>
-                            <input type="text" id="gen-skills" name="skills" class="form-control" placeholder="Budgeting, QuickBooks, Data Analysis, Team Leadership" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="gen-cert">Professional Certifications</label>
-                            <input type="text" id="gen-cert" name="certifications" class="form-control" placeholder="CPA (K), CIFA, Certified Scrum Master">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="gen-lang">Languages</label>
-                            <input type="text" id="gen-lang" name="languages" class="form-control" placeholder="English (Fluent), Kiswahili (Fluent)">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="gen-ref">Referees</label>
-                            <input type="text" id="gen-ref" name="references" class="form-control" placeholder="Available upon request or list 2-3 referees">
-                        </div>
-                    </div>
-
-                    <div class="mt-4 text-center">
-                        <button type="submit" class="btn btn-accent btn-lg" id="btn-submit-generate" style="min-width: 240px;">
-                            🚀 Generate Professional CV
-                        </button>
-                    </div>
-                </form>
-
-                <!-- CV Result Container -->
-                <div id="gen-result-container" class="mt-4 hidden" style="border-top: 2px dashed var(--border); padding-top: 2rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: .75rem;">
-                        <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--primary); margin: 0;">Your Generated CV</h3>
-                        <div style="display: flex; gap: .5rem;">
-                            <button type="button" class="btn btn-outline btn-sm" onclick="copyCvText('gen-output-text')">📋 Copy Full Text</button>
-                            <button type="button" class="btn btn-primary btn-sm" onclick="downloadCvAsFile('gen-output-text', 'Kenyan_CV.txt')">💾 Download .TXT</button>
-                        </div>
-                    </div>
-                    <div id="gen-output-html" class="p-3 mb-3" style="background: #fff; border: 1px solid var(--border); border-radius: 8px;"></div>
-                    <textarea id="gen-output-text" class="form-control" rows="12" readonly style="font-family: monospace; font-size: .9rem; background: #fafafa;"></textarea>
-                </div>
-            </div>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- TAB 2: AUDIT & MODIFY EXISTING CV          -->
-        <!-- ========================================== -->
-        <div id="cv-panel-analyze" class="card shadow-lg hidden" style="max-width: 980px; margin: 0 auto; border-radius: 16px; border: 1px solid var(--border);">
-            <div class="card-body" style="padding: clamp(1.5rem, 3vw, 2.5rem);">
-                <div style="border-bottom: 2px solid var(--border); padding-bottom: 1rem; margin-bottom: 2rem;">
-                    <h2 style="font-size: 1.4rem; font-weight: 700; color: var(--primary);">CV Review, Audit &amp; Enhancer</h2>
-                    <p class="text-muted" style="font-size: .95rem; margin: 0;">Paste your CV text or upload a document to get an instant Kenyan ATS score, actionable feedback, and an auto-enhanced version.</p>
-                </div>
-
-                <form id="cv-analyze-form" onsubmit="handleCvAnalyze(event)">
-                    @csrf
-                    <div class="form-group mb-3">
-                        <label class="form-label" for="audit-file">Upload CV Document (Optional: .txt, .pdf, .docx)</label>
-                        <input type="file" id="audit-file" name="cv_file" class="form-control" accept=".txt,.pdf,.docx,.doc">
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label class="form-label" for="audit-text">Or Paste CV Text Here *</label>
-                        <textarea id="audit-text" name="cv_text" class="form-control" rows="8" placeholder="Paste your complete resume or CV text here to analyze..."></textarea>
-                    </div>
-
-                    <div class="text-center mt-3">
-                        <button type="submit" class="btn btn-accent btn-lg" id="btn-submit-analyze" style="min-width: 260px;">
-                            🔬 Audit &amp; Modify My CV Now
-                        </button>
-                    </div>
-                </form>
-
-                <!-- Analysis Results Section -->
-                <div id="audit-results-container" class="mt-4 hidden" style="border-top: 2px dashed var(--border); padding-top: 2rem;">
-                    <!-- Score Header -->
-                    <div style="background: #FFFFFF; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,.06); border: 1px solid var(--border); margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
-                        <div>
-                            <div style="font-size: .9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 600;">Overall ATS Readiness Score</div>
-                            <div id="audit-rating-title" style="font-size: 1.6rem; font-weight: 800; color: var(--primary);">Strong Profile</div>
-                            <div id="audit-word-count" style="font-size: .85rem; color: var(--text-muted);">Word Count: 420 words</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div id="audit-score-circle" style="width: 84px; height: 84px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; box-shadow: 0 4px 10px rgba(27,94,32,.3);">
-                                85
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Issues & Feedback -->
-                    <div class="grid grid-2 mb-4" style="gap: 1.25rem;">
-                        <!-- Issues Detected -->
-                        <div style="background: #FFF5F5; border: 1px solid #FED7D7; border-radius: 12px; padding: 1.25rem;">
-                            <h4 style="color: #C53030; font-size: 1.05rem; font-weight: 700; margin-bottom: .75rem;">⚠️ Issues Found</h4>
-                            <div id="audit-issues-list" style="font-size: .9rem; display: flex; flex-direction: column; gap: .6rem;"></div>
-                        </div>
-
-                        <!-- Recommendations -->
-                        <div style="background: #FFFAF0; border: 1px solid #FEEBC8; border-radius: 12px; padding: 1.25rem;">
-                            <h4 style="color: #DD6B20; font-size: 1.05rem; font-weight: 700; margin-bottom: .75rem;">💡 Actionable Improvements</h4>
-                            <div id="audit-suggestions-list" style="font-size: .9rem; display: flex; flex-direction: column; gap: .6rem;"></div>
-                        </div>
-                    </div>
-
-                    <!-- Enhanced CV Output -->
-                    <div style="background: #F0FFF4; border: 1px solid #C6F6D5; border-radius: 12px; padding: 1.5rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: .75rem; flex-wrap: wrap; gap: .5rem;">
-                            <h4 style="color: #22543D; font-size: 1.1rem; font-weight: 700; margin: 0;">✨ Auto-Modified &amp; Enhanced Version</h4>
-                            <div style="display: flex; gap: .5rem;">
-                                <button type="button" class="btn btn-outline btn-sm" onclick="copyCvText('audit-enhanced-text')">📋 Copy Enhanced</button>
-                                <button type="button" class="btn btn-primary btn-sm" onclick="downloadCvAsFile('audit-enhanced-text', 'Enhanced_CV.txt')">💾 Download</button>
-                            </div>
-                        </div>
-                        <p style="font-size: .85rem; color: #276749; margin-bottom: .75rem;">This version restructures headers, boosts active verbs, and cleans formatting for maximum ATS compatibility.</p>
-                        <textarea id="audit-enhanced-text" class="form-control" rows="12" readonly style="font-family: monospace; font-size: .9rem; background: #fff;"></textarea>
-                    </div>
-                </div>
-            </div>
-        </div>
-
     </div>
-</section>
+</div>
+
+<div class="section" style="background:var(--bg);padding-top:2.5rem;">
+<div class="container">
+
+{{-- ══════════════════════════════════════════════════════════ --}}
+{{-- PANEL 1 — GENERATE                                         --}}
+{{-- ══════════════════════════════════════════════════════════ --}}
+<div id="cv-panel-generate" style="max-width:900px;margin:0 auto;">
+
+    <div class="card" style="border-radius:16px;">
+        <div class="card-body" style="padding:clamp(1.5rem,4vw,2.5rem);">
+            <h2 style="font-size:1.35rem;font-weight:800;color:var(--primary);margin-bottom:.35rem;">CV Builder Wizard</h2>
+            <p style="font-size:.9rem;color:var(--text-muted);margin-bottom:2rem;">
+                Fill in your details below to generate an ATS-standard Kenyan CV formatted for corporate, NGO and government applications.
+            </p>
+
+            <form id="cv-generate-form">
+                @csrf
+
+                {{-- Section 1: Personal --}}
+                <div class="form-section-title">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                    1 &nbsp;Personal &amp; Contact Information
+                </div>
+                <div class="grid grid-2" style="gap:1.1rem;">
+                    <div class="form-group">
+                        <label class="form-label" for="gen-name">Full Name *</label>
+                        <input type="text" id="gen-name" name="full_name" class="form-control"
+                               placeholder="e.g. Brian Kiprop Mwangi" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="gen-title">Target Job Title *</label>
+                        <input type="text" id="gen-title" name="job_title" class="form-control"
+                               placeholder="e.g. Senior Accountant / Logistics Officer" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="gen-phone">Phone (Kenyan format) *</label>
+                        <input type="tel" id="gen-phone" name="phone" class="form-control"
+                               placeholder="07XXXXXXXX or +254XXXXXXXXX" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="gen-email">Email Address *</label>
+                        <input type="email" id="gen-email" name="email" class="form-control"
+                               placeholder="name@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="gen-loc">Location / Town *</label>
+                        <input type="text" id="gen-loc" name="location" class="form-control"
+                               placeholder="e.g. Nairobi, Kenya" value="Nairobi, Kenya">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="gen-linkedin">LinkedIn / Portfolio URL</label>
+                        <input type="url" id="gen-linkedin" name="linkedin" class="form-control"
+                               placeholder="https://linkedin.com/in/username">
+                    </div>
+                </div>
+
+                {{-- Section 2: Summary --}}
+                <div class="form-section-title">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    2 &nbsp;Professional Summary
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="gen-summary">Career Summary / Objective *</label>
+                    <textarea id="gen-summary" name="summary" class="form-control" rows="4"
+                              placeholder="Dedicated and results-driven professional with 4+ years of experience in financial reporting, auditing, and tax compliance. Proven track record of delivering measurable results in fast-paced environments."
+                              required></textarea>
+                    <span class="form-hint">40–80 words recommended. Highlight your years of experience, expertise and value proposition.</span>
+                </div>
+
+                {{-- Section 3: Experience --}}
+                <div class="form-section-title">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    3 &nbsp;Work Experience
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="gen-exp">Job History &amp; Key Accomplishments</label>
+                    <textarea id="gen-exp" name="experience" class="form-control" rows="6"
+                              placeholder="Operations Manager | ABC Logistics Ltd, Nairobi (Jan 2021 – Present)&#10;• Spearheaded supply chain workflows, reducing delivery delays by 35%.&#10;• Managed a departmental budget of KSh 12M with zero audit queries.&#10;• Trained a team of 12 field officers on compliance standards.&#10;&#10;Junior Officer | XYZ Enterprise (2018 – 2020)&#10;• Coordinated customer logistics and daily stock reconciliations."></textarea>
+                    <span class="form-hint">Use bullet points. Start each bullet with an action verb (Managed, Developed, Spearheaded…).</span>
+                </div>
+
+                {{-- Section 4: Education --}}
+                <div class="form-section-title">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>
+                    4 &nbsp;Education &amp; Academic Background
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="gen-edu">Qualifications &amp; Institutions *</label>
+                    <textarea id="gen-edu" name="education" class="form-control" rows="3"
+                              placeholder="Bachelor of Commerce (Finance Option) | University of Nairobi (2015 – 2019)&#10;KCSE Grade B+ | Alliance High School (2010 – 2014)"
+                              required></textarea>
+                </div>
+
+                {{-- Section 5: Skills --}}
+                <div class="form-section-title">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                    5 &nbsp;Skills, Certifications &amp; Languages
+                </div>
+                <div class="grid grid-2" style="gap:1.1rem;">
+                    <div class="form-group">
+                        <label class="form-label" for="gen-skills">Core Skills (comma-separated) *</label>
+                        <input type="text" id="gen-skills" name="skills" class="form-control"
+                               placeholder="Budgeting, QuickBooks, Data Analysis, Team Leadership" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="gen-cert">Professional Certifications</label>
+                        <input type="text" id="gen-cert" name="certifications" class="form-control"
+                               placeholder="CPA (K), CIFA, Certified Scrum Master">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="gen-lang">Languages</label>
+                        <input type="text" id="gen-lang" name="languages" class="form-control"
+                               placeholder="English (Fluent), Kiswahili (Fluent)">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="gen-ref">Referees</label>
+                        <input type="text" id="gen-ref" name="references" class="form-control"
+                               placeholder="Available upon request">
+                    </div>
+                </div>
+
+                <div style="text-align:center;margin-top:2rem;">
+                    <button type="submit" class="btn btn-accent btn-xl" id="btn-submit-generate" style="min-width:260px;">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        Generate Professional CV
+                    </button>
+                </div>
+            </form>
+
+            {{-- Generated CV output --}}
+            <div id="gen-result-container" class="hidden" style="margin-top:2.5rem;border-top:2px dashed var(--border);padding-top:2rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem;">
+                    <h3 style="font-size:1.2rem;font-weight:800;color:var(--primary);margin:0;">Your Generated CV</h3>
+                    <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+                        <button type="button" class="btn btn-ghost btn-sm" onclick="copyCvText('gen-output-text')">
+                            📋 Copy Text
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="downloadCvAsFile('gen-output-text','Kenya_CV.txt')">
+                            💾 Download .TXT
+                        </button>
+                    </div>
+                </div>
+                <div id="gen-output-html"
+                     style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem;overflow-x:auto;">
+                </div>
+                <details>
+                    <summary style="font-size:.85rem;color:var(--text-muted);cursor:pointer;margin-bottom:.5rem;">View Plain Text Version</summary>
+                    <textarea id="gen-output-text" class="form-control" rows="12" readonly
+                              style="font-family:monospace;font-size:.85rem;background:#fafafa;"></textarea>
+                </details>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ══════════════════════════════════════════════════════════ --}}
+{{-- PANEL 2 — AUDIT                                            --}}
+{{-- ══════════════════════════════════════════════════════════ --}}
+<div id="cv-panel-analyze" class="hidden" style="max-width:900px;margin:0 auto;">
+
+    <div class="card" style="border-radius:16px;">
+        <div class="card-body" style="padding:clamp(1.5rem,4vw,2.5rem);">
+            <h2 style="font-size:1.35rem;font-weight:800;color:var(--primary);margin-bottom:.35rem;">CV Audit &amp; Enhancer</h2>
+            <p style="font-size:.9rem;color:var(--text-muted);margin-bottom:2rem;">
+                Paste your CV text below to receive an instant ATS readiness score, specific actionable feedback, and a professionally restructured version ready to submit.
+            </p>
+
+            {{-- File upload info --}}
+            <div class="alert alert-info" style="margin-bottom:1.5rem;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div>
+                    <strong>Best results: paste your CV text.</strong>
+                    Plain .txt files can also be uploaded. PDF and Word uploads are not supported — please copy &amp; paste the text content instead for accurate analysis.
+                </div>
+            </div>
+
+            <form id="cv-analyze-form">
+                @csrf
+                <div class="form-group" style="margin-bottom:1.25rem;">
+                    <label class="form-label" for="audit-file">Upload Plain Text CV (.txt only)</label>
+                    <input type="file" id="audit-file" name="cv_file" class="form-control" accept=".txt">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="audit-text">Or Paste Your Full CV Text *</label>
+                    <textarea id="audit-text" name="cv_text" class="form-control" rows="10"
+                              placeholder="Paste your complete CV or résumé text here…&#10;&#10;Include your name, contact details, summary, work experience, education, skills and referees for the most accurate audit."></textarea>
+                </div>
+
+                <div style="text-align:center;margin-top:1.5rem;">
+                    <button type="submit" class="btn btn-accent btn-xl" id="btn-submit-analyze" style="min-width:260px;">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                        Audit &amp; Improve My CV
+                    </button>
+                </div>
+            </form>
+
+            {{-- Audit results --}}
+            <div id="audit-results-container" class="hidden" style="margin-top:2.5rem;border-top:2px dashed var(--border);padding-top:2rem;">
+
+                {{-- Score card --}}
+                <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.25rem;margin-bottom:1.5rem;box-shadow:var(--shadow);">
+                    <div>
+                        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:.35rem;">ATS Readiness Score</div>
+                        <div id="audit-rating-title" style="font-size:1.75rem;font-weight:800;color:var(--primary);line-height:1;margin-bottom:.3rem;">—</div>
+                        <div id="audit-word-count" style="font-size:.85rem;color:var(--text-muted);">Word count: —</div>
+                    </div>
+                    <div id="audit-score-circle"
+                         style="width:88px;height:88px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:2.1rem;font-weight:800;box-shadow:0 4px 16px rgba(27,94,32,.3);flex-shrink:0;">
+                        —
+                    </div>
+                </div>
+
+                {{-- Issues & suggestions --}}
+                <div class="grid grid-2" style="gap:1.25rem;margin-bottom:1.5rem;">
+                    <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:12px;padding:1.25rem;">
+                        <h4 style="color:#991B1B;font-size:1rem;font-weight:700;margin-bottom:.75rem;display:flex;align-items:center;gap:.4rem;">
+                            <span>⚠️</span> Issues Found
+                        </h4>
+                        <div id="audit-issues-list" style="font-size:.875rem;display:flex;flex-direction:column;gap:.65rem;"></div>
+                    </div>
+                    <div style="background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:12px;padding:1.25rem;">
+                        <h4 style="color:#92400E;font-size:1rem;font-weight:700;margin-bottom:.75rem;display:flex;align-items:center;gap:.4rem;">
+                            <span>💡</span> Improvements
+                        </h4>
+                        <div id="audit-suggestions-list" style="font-size:.875rem;display:flex;flex-direction:column;gap:.65rem;"></div>
+                    </div>
+                </div>
+
+                {{-- Positives --}}
+                <div id="audit-positives-wrap" style="background:#F0FDF4;border:1.5px solid #A7F3D0;border-radius:12px;padding:1.25rem;margin-bottom:1.5rem;display:none;">
+                    <h4 style="color:#065F46;font-size:1rem;font-weight:700;margin-bottom:.75rem;display:flex;align-items:center;gap:.4rem;">
+                        <span>✅</span> Strengths
+                    </h4>
+                    <div id="audit-positives-list" style="font-size:.875rem;display:flex;flex-direction:column;gap:.5rem;"></div>
+                </div>
+
+                {{-- Enhanced output --}}
+                <div style="background:#F8FFF9;border:1.5px solid #A7F3D0;border-radius:12px;padding:1.5rem;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.75rem;margin-bottom:.75rem;">
+                        <h4 style="color:#065F46;font-size:1.1rem;font-weight:700;margin:0;">✨ Auto-Enhanced Version</h4>
+                        <div style="display:flex;gap:.5rem;">
+                            <button type="button" class="btn btn-ghost btn-sm" onclick="copyCvText('audit-enhanced-text')">📋 Copy</button>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="downloadCvAsFile('audit-enhanced-text','Enhanced_CV.txt')">💾 Download</button>
+                        </div>
+                    </div>
+                    <p style="font-size:.82rem;color:#047857;margin-bottom:.75rem;line-height:1.5;">
+                        Section headers normalised, passive phrases replaced with active verbs, bullet formatting standardised. Remove the notes block at the bottom before submitting.
+                    </p>
+                    <textarea id="audit-enhanced-text" class="form-control" rows="14" readonly
+                              style="font-family:monospace;font-size:.85rem;background:#fff;"></textarea>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+</div>
 
 @push('scripts')
 <script>
+// ── Tab switcher ───────────────────────────────────────────────
 function switchCvTab(tab) {
+    const isGen = tab === 'generate';
     const btnGen = document.getElementById('tab-btn-generate');
     const btnAna = document.getElementById('tab-btn-analyze');
     const pnlGen = document.getElementById('cv-panel-generate');
     const pnlAna = document.getElementById('cv-panel-analyze');
 
-    if (tab === 'generate') {
-        btnGen.classList.add('btn-primary', 'active');
-        btnGen.classList.remove('btn-outline');
-        btnAna.classList.remove('btn-primary', 'active');
-        btnAna.classList.add('btn-outline');
+    if (isGen) {
+        btnGen.className = 'btn btn-accent btn-lg cv-tab-active';
+        btnAna.className = 'btn btn-outline-white btn-lg';
         pnlGen.classList.remove('hidden');
         pnlAna.classList.add('hidden');
     } else {
-        btnAna.classList.add('btn-primary', 'active');
-        btnAna.classList.remove('btn-outline');
-        btnGen.classList.remove('btn-primary', 'active');
-        btnGen.classList.add('btn-outline');
+        btnAna.className = 'btn btn-accent btn-lg cv-tab-active';
+        btnGen.className = 'btn btn-outline-white btn-lg';
         pnlAna.classList.remove('hidden');
         pnlGen.classList.add('hidden');
     }
 }
 
-async function handleCvGenerate(e) {
+// ── Generate CV ───────────────────────────────────────────────
+document.getElementById('cv-generate-form').addEventListener('submit', async function (e) {
     e.preventDefault();
     const btn = document.getElementById('btn-submit-generate');
+    const orig = btn.innerHTML;
     btn.disabled = true;
-    btn.textContent = 'Generating CV...';
+    btn.innerHTML = '<span class="spinner" style="width:18px;height:18px;border-width:2px;border-top-color:#fff;"></span> &nbsp;Generating…';
 
-    const form = document.getElementById('cv-generate-form');
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
-
+    const data = Object.fromEntries(new FormData(this).entries());
     try {
         const res = await api.post('/api/cv/generate', data);
         if (res.success) {
@@ -254,102 +334,121 @@ async function handleCvGenerate(e) {
             document.getElementById('gen-output-html').innerHTML = res.cv_html;
             document.getElementById('gen-result-container').classList.remove('hidden');
             showToast('CV generated successfully!', 'success');
-            document.getElementById('gen-result-container').scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('gen-result-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else {
-            showToast(res.message || 'Generation failed.', 'error');
+            showToast(res.message || 'Generation failed. Please check your inputs.', 'error');
         }
     } catch (err) {
-        showToast(err.message || 'An error occurred while generating CV.', 'error');
+        showToast(err.message || 'An error occurred. Please try again.', 'error');
     } finally {
         btn.disabled = false;
-        btn.textContent = '🚀 Generate Professional CV';
+        btn.innerHTML = orig;
     }
-}
+});
 
-async function handleCvAnalyze(e) {
+// ── Audit CV ──────────────────────────────────────────────────
+document.getElementById('cv-analyze-form').addEventListener('submit', async function (e) {
     e.preventDefault();
     const btn = document.getElementById('btn-submit-analyze');
+    const orig = btn.innerHTML;
     btn.disabled = true;
-    btn.textContent = 'Auditing CV...';
+    btn.innerHTML = '<span class="spinner" style="width:18px;height:18px;border-width:2px;border-top-color:#fff;"></span> &nbsp;Analysing…';
 
-    const form = document.getElementById('cv-analyze-form');
-    const formData = new FormData(form);
-
+    const formData = new FormData(this);
     try {
-        const res = await fetch('/api/cv/analyze', {
+        const response = await fetch('/api/cv/analyze', {
             method: 'POST',
             body: formData,
             headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                 'Accept': 'application/json'
             }
         });
-        const data = await res.json();
+        const data = await response.json();
 
         if (data.success) {
-            const a = data.analysis;
-            document.getElementById('audit-score-circle').textContent = a.score;
-            document.getElementById('audit-rating-title').textContent = a.rating;
-            document.getElementById('audit-word-count').textContent = 'Word Count: ' + a.word_count + ' words';
-            
-            // Score circle color
-            const circle = document.getElementById('audit-score-circle');
-            if (a.score >= 80) circle.style.background = '#2E7D32';
-            else if (a.score >= 60) circle.style.background = '#F59E0B';
-            else circle.style.background = '#C62828';
-
-            // Populate issues
-            const issuesEl = document.getElementById('audit-issues-list');
-            issuesEl.innerHTML = '';
-            if (a.issues.length === 0) {
-                issuesEl.innerHTML = '<div style="color: #2E7D32;">✓ No critical issues detected!</div>';
-            } else {
-                a.issues.forEach(iss => {
-                    issuesEl.innerHTML += '<div><strong>• ' + escapeHtml(iss.title) + ':</strong> ' + escapeHtml(iss.description) + '</div>';
-                });
-            }
-
-            // Populate suggestions
-            const suggEl = document.getElementById('audit-suggestions-list');
-            suggEl.innerHTML = '';
-            if (a.suggestions.length === 0) {
-                suggEl.innerHTML = '<div style="color: #2E7D32;">✓ Great job! Your CV adheres to standard practices.</div>';
-            } else {
-                a.suggestions.forEach(s => {
-                    suggEl.innerHTML += '<div><strong>• ' + escapeHtml(s.title) + ':</strong> ' + escapeHtml(s.description) + '</div>';
-                });
-            }
-
-            // Enhanced CV
-            document.getElementById('audit-enhanced-text').value = data.modified_cv;
-
-            document.getElementById('audit-results-container').classList.remove('hidden');
-            showToast('Audit complete!', 'success');
-            document.getElementById('audit-results-container').scrollIntoView({ behavior: 'smooth' });
+            renderAuditResults(data);
+            showToast('CV audit complete!', 'success');
+            document.getElementById('audit-results-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else {
-            showToast(data.message || 'Audit failed.', 'error');
+            showToast(data.message || 'Audit failed. Please try again.', 'error');
         }
     } catch (err) {
-        showToast(err.message || 'An error occurred during CV analysis.', 'error');
+        showToast(err.message || 'An error occurred during analysis.', 'error');
     } finally {
         btn.disabled = false;
-        btn.textContent = '🔬 Audit & Modify My CV Now';
+        btn.innerHTML = orig;
     }
+});
+
+function renderAuditResults(data) {
+    const a = data.analysis;
+
+    // Score circle
+    const circle = document.getElementById('audit-score-circle');
+    circle.textContent = a.score;
+    circle.style.background = a.color || (a.score >= 70 ? '#16a34a' : a.score >= 50 ? '#d97706' : '#dc2626');
+
+    document.getElementById('audit-rating-title').textContent = a.rating;
+    document.getElementById('audit-word-count').textContent = 'Word count: ' + a.word_count + ' words';
+
+    // Issues
+    const issEl = document.getElementById('audit-issues-list');
+    issEl.innerHTML = '';
+    if (a.issues.length === 0) {
+        issEl.innerHTML = '<div style="color:#166534;font-weight:600;">✓ No critical issues found!</div>';
+    } else {
+        a.issues.forEach(function (iss) {
+            issEl.innerHTML += '<div style="border-left:3px solid #FCA5A5;padding-left:.6rem;"><strong>' + esc(iss.title) + '</strong><br><span style="color:var(--text-muted);">' + esc(iss.description) + '</span></div>';
+        });
+    }
+
+    // Suggestions
+    const sugEl = document.getElementById('audit-suggestions-list');
+    sugEl.innerHTML = '';
+    if (a.suggestions.length === 0) {
+        sugEl.innerHTML = '<div style="color:#166534;font-weight:600;">✓ Great job! Following best practices.</div>';
+    } else {
+        a.suggestions.forEach(function (s) {
+            sugEl.innerHTML += '<div style="border-left:3px solid #FDE68A;padding-left:.6rem;"><strong>' + esc(s.title) + '</strong><br><span style="color:var(--text-muted);">' + esc(s.description) + '</span></div>';
+        });
+    }
+
+    // Positives
+    const posWrap = document.getElementById('audit-positives-wrap');
+    const posEl   = document.getElementById('audit-positives-list');
+    posEl.innerHTML = '';
+    if (a.positives && a.positives.length > 0) {
+        posWrap.style.display = 'block';
+        a.positives.forEach(function (p) {
+            posEl.innerHTML += '<div style="display:flex;align-items:flex-start;gap:.4rem;"><span style="color:#16a34a;flex-shrink:0;">✓</span><span>' + esc(p) + '</span></div>';
+        });
+    } else {
+        posWrap.style.display = 'none';
+    }
+
+    // Enhanced CV
+    document.getElementById('audit-enhanced-text').value = data.modified_cv;
+    document.getElementById('audit-results-container').classList.remove('hidden');
 }
 
-function copyCvText(elementId) {
-    const el = document.getElementById(elementId);
+// ── Utilities ─────────────────────────────────────────────────
+function esc(str) {
+    const d = document.createElement('div');
+    d.innerText = String(str || '');
+    return d.innerHTML;
+}
+
+function copyCvText(id) {
+    const el = document.getElementById(id);
     el.select();
-    navigator.clipboard.writeText(el.value).then(() => {
-        showToast('Copied to clipboard!', 'success');
-    }).catch(() => {
-        document.execCommand('copy');
-        showToast('Copied to clipboard!', 'success');
-    });
+    navigator.clipboard.writeText(el.value)
+        .then(function () { showToast('Copied to clipboard!', 'success'); })
+        .catch(function () { document.execCommand('copy'); showToast('Copied!', 'success'); });
 }
 
-function downloadCvAsFile(elementId, filename) {
-    const text = document.getElementById(elementId).value;
+function downloadCvAsFile(id, filename) {
+    const text = document.getElementById(id).value;
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -357,12 +456,6 @@ function downloadCvAsFile(elementId, filename) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.innerText = text;
-    return div.innerHTML;
 }
 </script>
 @endpush

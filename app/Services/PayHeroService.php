@@ -93,6 +93,14 @@ class PayHeroService
     }
 
     /**
+     * Whether a webhook secret is configured (C4: refuse if missing)
+     */
+    public function hasWebhookSecret(): bool
+    {
+        return !empty($this->webhookSecret);
+    }
+
+    /**
      * Verify webhook signature
      *
      * PayHero sends a X-PAYHERO-SIGNATURE header with HMAC-SHA256 of the raw body.
@@ -102,10 +110,9 @@ class PayHeroService
      */
     public function verifySignature(Request $request): bool
     {
-        // If no webhook secret configured, skip verification
+        // C4: Never skip verification — caller must check hasWebhookSecret() first
         if (!$this->webhookSecret) {
-            Log::warning('PayHero webhook: No webhook secret configured, skipping signature verification.');
-            return true;
+            return false;
         }
 
         $signature = $request->header('X-PAYHERO-SIGNATURE');

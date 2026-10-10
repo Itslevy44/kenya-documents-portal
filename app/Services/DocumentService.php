@@ -103,29 +103,37 @@ class DocumentService
         
         $css = '
             <style>
-                @page { margin: 25mm; }
-                body { 
-                    font-family: "Times New Roman", Times, serif; 
-                    font-size: 12pt; 
-                    line-height: 1.5; 
+                /* BUG-10: CSS counter-based page numbers — DomPDF supports @page margin boxes */
+                @page {
+                    margin: 25mm 20mm 28mm 20mm;
+                    @bottom-right {
+                        content: "Page " counter(page) " of " counter(pages);
+                        font-family: "Times New Roman", Times, serif;
+                        font-size: 9pt;
+                        color: #666;
+                    }
+                    @bottom-left {
+                        content: "Kenya Docs — kenyadocuments.online";
+                        font-family: "Times New Roman", Times, serif;
+                        font-size: 9pt;
+                        color: #aaa;
+                    }
+                }
+                body {
+                    font-family: "Times New Roman", Times, serif;
+                    font-size: 12pt;
+                    line-height: 1.5;
                     color: #212121;
                 }
                 h1 { text-align: center; font-size: 16pt; margin-bottom: 1em; }
                 h2 { font-size: 14pt; margin-top: 1.5em; margin-bottom: 0.5em; }
-                p { margin-bottom: 0.75em; text-align: justify; }
-                .signature-block { 
-                    margin-top: 3em; 
-                    border-top: 1px solid #000; 
-                    padding-top: 0.5em; 
-                    width: 200px; 
-                }
+                p  { margin-bottom: 0.75em; text-align: justify; }
+                .signature-block { margin-top: 3em; border-top: 1px solid #000; padding-top: 0.5em; width: 200px; }
                 .date { margin-top: 1.5em; }
-                .footer { position: fixed; bottom: 10mm; right: 10mm; font-size: 10pt; color: #666; }
             </style>
         ';
-        
-        $footer = '<div class="footer">Page <script>document.write(pageNum);</script></div>';
-        $fullHtml = $css . $html . $footer;
+
+        $fullHtml = $css . $html;
 
         $pdf = Pdf::loadHTML($fullHtml);
         $pdf->setPaper('a4', 'portrait');
@@ -139,10 +147,13 @@ class DocumentService
     }
 
     /**
-     * Generate Word document
+     * Generate Word document  (H10: enable output escaping for & < > in fields)
      */
     protected function generateWord(GeneratedDocument $doc, string $slug, string $token): string
     {
+        // H10: Escape XML special characters so & < > don't corrupt the .docx
+        \PhpOffice\PhpWord\Settings::setOutputEscapingEnabled(true);
+
         $phpWord = new PhpWord();
         
         // Set document properties

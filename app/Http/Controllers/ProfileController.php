@@ -41,7 +41,8 @@ class ProfileController extends Controller
             'email'     => ['nullable', 'email', 'max:255'],
             'full_name' => ['required', 'string', 'max:255'],
             'id_number' => ['nullable', 'string', 'max:20'],
-            'phone'     => ['required', 'regex:/^07\d{8}$/'],
+            // M6: phone must be unique (ignore current user) and accept 07/01
+            'phone'     => ['required', 'regex:/^(07|01)\d{8}$/', 'unique:users,phone,' . $user->id],
             'address'   => ['nullable', 'string', 'max:500'],
             'city'      => ['nullable', 'string', 'max:100'],
         ]);

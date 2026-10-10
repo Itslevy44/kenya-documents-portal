@@ -13,7 +13,9 @@ use App\Models\User;
 use App\Services\TelegramService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class AdminController extends Controller
@@ -133,10 +135,75 @@ class AdminController extends Controller
             'ip_address'   => request()->ip(),
         ]);
 
-        return response()->json([
-            'success'   => true,
-            'is_active' => $template->is_active,
+        return response()->json(['success' => true, 'is_active' => $template->is_active]);
+    }
+
+    public function templateDelete(int $id)
+    {
+        $template = Template::findOrFail($id);
+
+        if ($template->generatedDocuments()->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete a template that has generated documents.',
+            ], 422);
+        }
+
+        AuditLog::create([
+            'user_id' => Auth::id(), 'action' => 'template.deleted',
+            'subject_type' => 'Template', 'subject_id' => $id,
+            'payload' => ['name' => $template->name], 'ip_address' => request()->ip(),
         ]);
+
+        $template->delete();
+        return response()->json(['success' => true]);
+    }
+
+    // =========================================================================
+    // Categories
+    // =========================================================================
+
+    public function categoriesList()
+    {
+        return response()->json(['success' => true, 'data' => Category::orderBy('sort_order')->get()]);
+    }
+
+    public function categoryCreate(Request $request)
+    {
+        $validated = $request->validate([
+            'name'        => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string'],
+            'icon'        => ['nullable', 'string', 'max:10'],
+            'sort_order'  => ['integer', 'min:0'],
+        ]);
+        $validated['slug']      = Str::slug($validated['name']);
+        $validated['is_active'] = true;
+        $category               = Category::create($validated);
+        return response()->json(['success' => true, 'data' => $category]);
+    }
+
+    public function categoryUpdate(Request $request, int $id)
+    {
+        $category  = Category::findOrFail($id);
+        $validated = $request->validate([
+            'name'        => ['sometimes', 'string', 'max:100'],
+            'description' => ['nullable', 'string'],
+            'icon'        => ['nullable', 'string', 'max:10'],
+            'sort_order'  => ['sometimes', 'integer', 'min:0'],
+            'is_active'   => ['boolean'],
+        ]);
+        $category->update($validated);
+        return response()->json(['success' => true, 'data' => $category->fresh()]);
+    }
+
+    public function categoryDelete(int $id)
+    {
+        $category = Category::findOrFail($id);
+        if ($category->templates()->exists()) {
+            return response()->json(['success' => false, 'message' => 'Cannot delete a category with templates.'], 422);
+        }
+        $category->delete();
+        return response()->json(['success' => true]);
     }
 
     // =========================================================================
@@ -152,7 +219,7 @@ class AdminController extends Controller
     public function libraryUpload(Request $request)
     {
         $request->validate([
-            'file'        => ['required', 'file', 'max:20480'], // 20MB max
+            'file'        => ['required', 'file', 'max:20480', 'mimes:pdf,docx,doc,zip,txt'],
             'title'       => ['required', 'string', 'max:255'],
             'description' => ['required', 'string'],
             'category'    => ['nullable', 'string', 'max:100'],
@@ -160,11 +227,15 @@ class AdminController extends Controller
         ]);
 
         $uploadedFile = $request->file('file');
-        $localPath = $uploadedFile->getPathname();
-        $caption = $request->title . ' — Kenya Docs Library';
+        $localPath    = $uploadedFile->getPathname();
+        $caption      = $request->title . ' — Kenya Docs Library';
 
-        // Upload to Telegram
-        $fileId = $this->telegramService->uploadFile($localPath, $caption);
+        try {
+            $fileId = $this->telegramService->uploadFile($localPath, $caption);
+        } catch (\Throwable $e) {
+            Log::error('Library upload to Telegram failed', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'File upload failed. Please try again.'], 500);
+        }
 
         $item = LibraryItem::create([
             'title'            => $request->title,
@@ -176,6 +247,15 @@ class AdminController extends Controller
             'category'         => $request->category,
             'is_free'          => $request->boolean('is_free', true),
             'is_active'        => true,
+        ]);
+
+        // M13: Flush library cache so new item appears immediately
+        Cache::flush();
+
+        AuditLog::create([
+            'user_id' => Auth::id(), 'action' => 'library.uploaded',
+            'subject_type' => 'LibraryItem', 'subject_id' => $item->id,
+            'payload' => ['title' => $item->title], 'ip_address' => request()->ip(),
         ]);
 
         return response()->json(['success' => true, 'data' => $item]);
@@ -195,6 +275,9 @@ class AdminController extends Controller
 
         $item->update($validated);
 
+        // M13: Flush library cache
+        Cache::flush();
+
         return response()->json(['success' => true, 'data' => $item->fresh()]);
     }
 
@@ -202,6 +285,15 @@ class AdminController extends Controller
     {
         $item = LibraryItem::findOrFail($id);
         $item->delete();
+
+        // M13: Flush library cache
+        Cache::flush();
+
+        AuditLog::create([
+            'user_id' => Auth::id(), 'action' => 'library.deleted',
+            'subject_type' => 'LibraryItem', 'subject_id' => $id,
+            'payload' => ['title' => $item->title], 'ip_address' => request()->ip(),
+        ]);
 
         return response()->json(['success' => true]);
     }
@@ -233,7 +325,7 @@ class AdminController extends Controller
     public function paymentUnlock(int $id)
     {
         $payment = Payment::findOrFail($id);
-        $doc = $payment->generatedDocument;
+        $doc     = $payment->generatedDocument;
 
         if ($doc) {
             $doc->update([
@@ -242,12 +334,15 @@ class AdminController extends Controller
             ]);
         }
 
+        // M15: Also mark the payment itself as paid (was being left as 'pending')
+        $payment->update(['status' => 'paid']);
+
         AuditLog::create([
             'user_id'      => Auth::id(),
-            'action'       => 'payment.unlocked',
+            'action'       => 'payment.manual_unlock',
             'subject_type' => 'Payment',
             'subject_id'   => $id,
-            'payload'      => [],
+            'payload'      => ['doc_id' => $doc?->id],
             'ip_address'   => request()->ip(),
         ]);
 
@@ -289,6 +384,7 @@ class AdminController extends Controller
             // Delete related data
             foreach ($user->generatedDocuments as $doc) {
                 $doc->downloads()->delete();
+                $doc->payments()->update(['generated_document_id' => null]);
                 $doc->delete();
             }
 

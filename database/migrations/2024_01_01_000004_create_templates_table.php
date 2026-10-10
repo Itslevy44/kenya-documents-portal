@@ -17,7 +17,7 @@ return new class extends Migration
             $table->decimal('price', 8, 2);
             $table->json('schema');
             $table->json('definition');
-            $table->boolean('is_active')->default(false);
+            $table->boolean('is_active')->default(true);  // BUG-02: was false — templates were hidden after seeding
             $table->integer('sort_order')->default(0);
             $table->string('meta_title')->nullable();
             $table->text('meta_description')->nullable();

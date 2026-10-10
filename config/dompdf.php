@@ -68,8 +68,8 @@ return [
         'default_font' => 'serif',
         'dpi' => 96,
         'enable_php' => false,
-        'enable_javascript' => true,
-        'enable_remote' => true,
+        'enable_javascript' => false,   // M12: disabled — no JS execution in PDFs
+        'enable_remote' => false,       // M12: disabled — prevents SSRF/local file reads
         'font_height_ratio' => 1.1,
         'enable_html5_parser' => true,
     ],

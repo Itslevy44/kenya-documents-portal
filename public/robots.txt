@@ -1,3 +1,27 @@
 User-agent: *
-Disallow: /storage/
+
+# Allow all public-facing pages
+Allow: /
+Allow: /library
+Allow: /cv-assistant
+Allow: /category/
+Allow: /builder/
+
+# Disallow private/functional routes
 Disallow: /api/
+Disallow: /storage/
+Disallow: /admin/
+Disallow: /payment/
+Disallow: /download/
+Disallow: /preview-file/
+Disallow: /preview
+Disallow: /my-documents
+Disallow: /profile
+Disallow: /signin
+Disallow: /signout
+
+# Sitemap location (BUG-14: was missing — search engines could not discover sitemap)
+Sitemap: https://kenyadocuments.online/sitemap.xml
+
+# Crawl delay for polite crawling
+Crawl-delay: 2

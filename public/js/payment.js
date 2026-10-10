@@ -83,8 +83,9 @@
         e.preventDefault();
 
         const phone = document.getElementById('pay-phone').value.trim();
-        if (!/^07\d{8}$/.test(phone)) {
-            showToast('Enter a valid Kenyan phone number (07XXXXXXXX).', 'error');
+        // BUG-07: Accept 07XXXXXXXX and 01XXXXXXXX (Safaricom/Airtel modern numbers)
+        if (!/^(07|01)\d{8}$/.test(phone)) {
+            showToast('Enter a valid Kenyan phone number: 07XXXXXXXX or 01XXXXXXXX', 'error');
             return;
         }
 

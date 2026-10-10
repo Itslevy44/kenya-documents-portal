@@ -27,3 +27,9 @@ yarn-error.log
 /storage/logs/*
 !/storage/logs/.gitkeep
 /bootstrap/cache/*.php
+
+# Local SQLite dev database
+/database/database.sqlite
+
+# Leaked hosting directory that was accidentally created
+/if0_42991350_kenyadocuments

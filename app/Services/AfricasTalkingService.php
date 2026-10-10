@@ -90,15 +90,20 @@ class AfricasTalkingService
     }
 
     /**
-     * Format phone number from 07XXXXXXXX to +254XXXXXXXX
-     *
-     * @param string $phone
-     * @return string
+     * Format phone number — accepts 07/01XXXXXXXX, +254XXXXXXXXX, 254XXXXXXXXX
+     * Returns E.164 format: +254XXXXXXXXX
      */
     protected function formatPhoneNumber(string $phone): string
     {
-        // Remove leading zero and add +254
-        if (str_starts_with($phone, '0')) {
+        $phone = preg_replace('/\s+/', '', $phone);
+
+        if (str_starts_with($phone, '+254')) {
+            return $phone;
+        }
+        if (str_starts_with($phone, '254') && strlen($phone) === 12) {
+            return '+' . $phone;
+        }
+        if (str_starts_with($phone, '0') && strlen($phone) === 10) {
             return '+254' . substr($phone, 1);
         }
         return $phone;

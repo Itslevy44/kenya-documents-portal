@@ -16,6 +16,8 @@ class User extends Authenticatable
         'phone',
         'name',
         'email',
+        'is_admin',        // BUG-06: was missing — admin provisioning silently failed
+        'remember_token',  // BUG-01: needed by Auth::login($user, true) remember-me
     ];
 
     protected $hidden = [
@@ -25,9 +27,12 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'is_admin' => 'boolean',
+            'is_admin'   => 'boolean',
+            'email_verified_at' => 'datetime',
         ];
     }
+
+    // ── Relationships ──────────────────────────────────────────────────────
 
     public function generatedDocuments(): HasMany
     {

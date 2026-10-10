@@ -70,7 +70,8 @@
     }
 
     function renderTelInput(field) {
-        return `${labelHtml(field)}<input type="tel" ${baseAttrs(field)} maxlength="10" inputmode="numeric" pattern="^07\\d{8}$">${hintHtml(field)}`;
+        // BUG-07: Accept 07XXXXXXXX and 01XXXXXXXX (Safaricom/Airtel modern numbers)
+        return `${labelHtml(field)}<input type="tel" ${baseAttrs(field)} maxlength="10" inputmode="numeric" pattern="^(07|01)\\d{8}$">${hintHtml(field)}`;
     }
 
     function renderNumberInput(field) {
